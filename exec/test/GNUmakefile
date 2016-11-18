@@ -7,9 +7,8 @@ TILING    :=
 
 HYPRE  := 
 
-# define the location of the MAESTRO root directory
+# define the location of the VARDEN root directory
 VARDEN_TOP_DIR := ../..
-
 
 # include the MAESTRO build stuff
 include $(VARDEN_TOP_DIR)/GVarden.mak

@@ -119,6 +119,33 @@ contains
              end do
           end do
        end select
+    else if (prob_type .eq. 4) then
+       select case(lev)
+       case (1)
+          do j = lo(2),hi(2)
+             do i = lo(1),hi(1)
+                if (mf(i,j) .gt. 1.2d0 .and. mf(i,j) .lt. 1.8d0) then
+                   tagbox(i,j) = .true.
+                end if
+             end do
+          enddo
+       case (2)
+          do j = lo(2),hi(2)
+             do i = lo(1),hi(1)
+                if (mf(i,j) .gt. 1.2d0 .and. mf(i,j) .lt. 1.8d0) then
+                   tagbox(i,j) = .true.
+                end if
+             end do
+          end do
+       case default
+          do j = lo(2),hi(2)
+             do i = lo(1),hi(1)
+                if (mf(i,j) .gt. 1.2d0 .and. mf(i,j) .lt. 1.8d0) then
+                   tagbox(i,j) = .true.
+                end if
+             end do
+          end do
+       end select
     else
        call bl_error('Unsupported prob_type')
     end if

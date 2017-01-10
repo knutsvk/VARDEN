@@ -119,6 +119,9 @@ contains
           call multifab_fill_ghost_cells(s(n),s(n-1),ng,mla%mba%rr(n-1,:), &
                                       bc(n-1),bc(n),1,dm+1,nscal)
        enddo
+    else if (prob_type .eq. 4) then
+       call ml_restrict_and_fill(nlevs, u, mla%mba%rr, bc, bcomp=1)
+       call ml_restrict_and_fill(nlevs, s, mla%mba%rr, bc, bcomp=dm+1)
     else
        call bl_error('Unsupported prob_type')
     end if
@@ -184,6 +187,11 @@ contains
              s(i,j,1) = ONE + HALF + HALF*tanh((y - HALF - h(x))/0.01d0)
           end do
        end do
+    else if (prob_type .eq. 4) then
+       ! Lid-driven cavity starting from rest 
+       u = ZERO
+       s(:,:,1) = ONE
+       s(:,:,2) = ZERO
 
     else
        call bl_error('Unsupported prob_type')

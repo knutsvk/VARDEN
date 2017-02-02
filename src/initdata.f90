@@ -119,7 +119,7 @@ contains
           call multifab_fill_ghost_cells(s(n),s(n-1),ng,mla%mba%rr(n-1,:), &
                                       bc(n-1),bc(n),1,dm+1,nscal)
        enddo
-    else if (prob_type .eq. 4) then
+    else if (prob_type .eq. 4 .or. prob_type .eq. 5) then
        call ml_restrict_and_fill(nlevs, u, mla%mba%rr, bc, bcomp=1)
        call ml_restrict_and_fill(nlevs, s, mla%mba%rr, bc, bcomp=dm+1)
     else
@@ -192,7 +192,12 @@ contains
        u = ZERO
        s(:,:,1) = ONE
        s(:,:,2) = ZERO
-
+    else if (prob_type .eq. 5) then
+       ! Laminar boundary layer
+       u(:,:,1) = ONE
+       u(:,:,2) = ZERO
+       s(:,:,1) = ONE
+       s(:,:,2) = ZERO
     else
        call bl_error('Unsupported prob_type')
     end if

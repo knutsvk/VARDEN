@@ -51,8 +51,8 @@ contains
     call multifab_fill_boundary(u)
     call multifab_fill_boundary(s)
 
-    call multifab_physbc(u,1,1,   dm,   bc)
-    call multifab_physbc(s,1,dm+1,nscal,bc)
+    call multifab_physbc(u,1,1,   dm,   bc, dx_in=dx)
+    call multifab_physbc(s,1,dm+1,nscal,bc, dx_in=dx)
 
     call destroy(bpt)
 
@@ -100,13 +100,13 @@ contains
           call multifab_fill_boundary(u(n))
           call multifab_fill_boundary(s(n))
 
-          call multifab_physbc(u(n),1,1,   dm,   bc(n))
-          call multifab_physbc(s(n),1,dm+1,nscal,bc(n))
+          call multifab_physbc(u(n),1,1,   dm,   bc(n), dx_in=dx(n,:))
+          call multifab_physbc(s(n),1,dm+1,nscal,bc(n), dx_in=dx(n,:))
        end if
        
     enddo
 
-    if (prob_type .eq. 1 .or. prob_type .eq. 2) then
+    if (prob_type .eq. 1 .or. prob_type .eq. 2 .or. prob_type .eq. 4 .or. prob_type .eq. 5) then
        call ml_restrict_and_fill(nlevs, u, mla%mba%rr, bc, bcomp=1)
        call ml_restrict_and_fill(nlevs, s, mla%mba%rr, bc, bcomp=dm+1)
     else if (prob_type .eq. 3) then
@@ -119,9 +119,6 @@ contains
           call multifab_fill_ghost_cells(s(n),s(n-1),ng,mla%mba%rr(n-1,:), &
                                       bc(n-1),bc(n),1,dm+1,nscal)
        enddo
-    else if (prob_type .eq. 4 .or. prob_type .eq. 5) then
-       call ml_restrict_and_fill(nlevs, u, mla%mba%rr, bc, bcomp=1)
-       call ml_restrict_and_fill(nlevs, s, mla%mba%rr, bc, bcomp=dm+1)
     else
        call bl_error('Unsupported prob_type')
     end if
@@ -187,8 +184,8 @@ contains
              s(i,j,1) = ONE + HALF + HALF*tanh((y - HALF - h(x))/0.01d0)
           end do
        end do
-    else if (prob_type .eq. 4) then
-       ! Lid-driven cavity starting from rest 
+    else if (prob_type .eq. 4 .or. prob_type .eq. 6) then
+       ! Start from rest 
        u = ZERO
        s(:,:,1) = ONE
        s(:,:,2) = ZERO
@@ -201,7 +198,6 @@ contains
     else
        call bl_error('Unsupported prob_type')
     end if
-
 
   end subroutine initdata_2d
 

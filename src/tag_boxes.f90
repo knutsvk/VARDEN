@@ -92,34 +92,7 @@ contains
              end do
           end do
        end select
-    else if (prob_type .eq. 3) then
-       select case(lev)
-       case (1)
-          do j = lo(2),hi(2)
-             do i = lo(1),hi(1)
-                if (mf(i,j) .gt. 1.2d0 .and. mf(i,j) .lt. 1.8d0) then
-                   tagbox(i,j) = .true.
-                end if
-             end do
-          enddo
-       case (2)
-          do j = lo(2),hi(2)
-             do i = lo(1),hi(1)
-                if (mf(i,j) .gt. 1.2d0 .and. mf(i,j) .lt. 1.8d0) then
-                   tagbox(i,j) = .true.
-                end if
-             end do
-          end do
-       case default
-          do j = lo(2),hi(2)
-             do i = lo(1),hi(1)
-                if (mf(i,j) .gt. 1.2d0 .and. mf(i,j) .lt. 1.8d0) then
-                   tagbox(i,j) = .true.
-                end if
-             end do
-          end do
-       end select
-    else if (prob_type .eq. 4) then
+    else if (prob_type .eq. 3 .or. prob_type .eq. 4 .or. prob_type .eq. 5) then
        select case(lev)
        case (1)
           do j = lo(2),hi(2)

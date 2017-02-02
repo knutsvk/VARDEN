@@ -32,6 +32,8 @@ contains
     
     type(bl_prof_timer), save :: bpt
 
+    dm = get_dim(s)
+    ng = nghost(s)
     if (ng == 0) return
 
     ! set optional arguments
@@ -43,9 +45,6 @@ contains
     if (present(dx_in))           dx = dx_in
     if (present(prob_lo_in)) prob_lo = prob_lo_in
     if (present(prob_hi_in)) prob_hi = prob_hi_in
-
-    dm = get_dim(s)
-    ng = nghost(s)
 
     call build(bpt, "multifab_physbc")
 
@@ -138,7 +137,7 @@ contains
     else if (bc(1,1) .eq. PARABOLA) then
        do j = lo(2)-ngylo, hi(2)+ngyhi
           do i = 1,ng
-             y = prob_lo(2) + dx(2) * (HALF + j)
+             y = dx(2) * (HALF + j)
              s(lo(1)-i,j) = HALF * y * (ONE - y)
           end do 
        end do

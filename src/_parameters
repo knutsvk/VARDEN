@@ -96,3 +96,34 @@ n_celly                    integer      32
 n_cellz                    integer      32
 
 job_name                   character    ""
+
+rho_bcx_lo                 real         1.0d0
+rho_bcy_hi                 real         1.0d0
+rho_bcz_lo                 real         1.0d0
+rho_bcx_hi                 real         1.0d0
+rho_bcy_lo                 real         1.0d0
+rho_bcz_hi                 real         1.0d0
+trac_bcx_lo                real         0.0d0
+trac_bcy_hi                real         0.0d0
+trac_bcz_lo                real         0.0d0
+trac_bcx_hi                real         0.0d0
+trac_bcy_lo                real         0.0d0
+trac_bcz_hi                real         0.0d0
+u_bcx_lo                   real         0.0d0
+u_bcx_hi                   real         0.0d0
+u_bcy_lo                   real         0.0d0
+u_bcy_hi                   real         0.0d0
+u_bcz_lo                   real         0.0d0
+u_bcz_hi                   real         0.0d0
+v_bcx_lo                   real         0.0d0
+v_bcx_hi                   real         0.0d0
+v_bcy_lo                   real         0.0d0
+v_bcy_hi                   real         0.0d0
+v_bcz_lo                   real         0.0d0
+v_bcz_hi                   real         0.0d0
+w_bcx_lo                   real         0.0d0
+w_bcx_hi                   real         0.0d0
+w_bcy_lo                   real         0.0d0
+w_bcy_hi                   real         0.0d0
+w_bcz_lo                   real         0.0d0
+w_bcz_hi                   real         0.0d0

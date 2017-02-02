@@ -61,14 +61,6 @@ contains
     narg = command_argument_count()
 
 
-    rho_bc(:,:) = 0.d0
-    trac_bc(:,:) = 0.d0
-    u_bc(:,:) = 0.d0
-    ! constant velocity on upper lid
-    u_bc(2,2) = 1.d0
-    v_bc(:,:) = 0.d0
-    w_bc(:,:) = 0.d0 
-
     need_inputs = .true.
 
     call get_environment_variable('PROBIN', probin_env, status = ierr)
@@ -169,6 +161,41 @@ contains
     prob_hi(1) = prob_hi_x
     if (dim_in > 1) prob_hi(2) = prob_hi_y
     if (dim_in > 2) prob_hi(3) = prob_hi_z
+    
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    ! Initialize Dirichlet BCs 
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+    rho_bc(1,1) = rho_bcx_lo
+    rho_bc(1,2) = rho_bcx_hi
+    rho_bc(2,1) = rho_bcy_lo
+    rho_bc(2,2) = rho_bcy_hi
+    rho_bc(3,1) = rho_bcz_lo
+    rho_bc(3,2) = rho_bcz_hi
+    trac_bc(1,1) = trac_bcx_lo
+    trac_bc(1,2) = trac_bcx_hi
+    trac_bc(2,1) = trac_bcy_lo
+    trac_bc(2,2) = trac_bcy_hi
+    trac_bc(3,1) = trac_bcz_lo
+    trac_bc(3,2) = trac_bcz_hi
+    u_bc(1,1) = u_bcx_lo
+    u_bc(1,2) = u_bcx_hi
+    u_bc(2,1) = u_bcy_lo
+    u_bc(2,2) = u_bcy_hi
+    u_bc(3,1) = u_bcz_lo
+    u_bc(3,2) = u_bcz_hi
+    v_bc(1,1) = v_bcx_lo
+    v_bc(1,2) = v_bcx_hi
+    v_bc(2,1) = v_bcy_lo
+    v_bc(2,2) = v_bcy_hi
+    v_bc(3,1) = v_bcz_lo
+    v_bc(3,2) = v_bcz_hi
+    w_bc(1,1) = w_bcx_lo
+    w_bc(1,2) = w_bcx_hi
+    w_bc(2,1) = w_bcy_lo
+    w_bc(2,2) = w_bcy_hi
+    w_bc(3,1) = w_bcz_lo
+    w_bc(3,2) = w_bcz_hi
     
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     ! Initialize pmask

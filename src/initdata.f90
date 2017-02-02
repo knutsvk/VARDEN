@@ -196,6 +196,21 @@ contains
        u(:,:,2) = ZERO
        s(:,:,1) = ONE
        s(:,:,2) = ZERO
+    else if (prob_type .eq. 6) then
+       ! Stokes first problem
+       u = ZERO
+       s(:,:,1) = ONE
+       s(:,:,2) = ZERO
+       do j=lo(2),hi(2)
+          do i=lo(1),hi(1)
+             x = prob_lo(1) + dx(1)*(i + HALF)
+             if (x < 0.5) then
+                u(i,j,2) = -TENTH
+             else 
+                u(i,j,2) = TENTH
+             end if
+          end do
+       end do
     else
        call bl_error('Unsupported prob_type')
     end if

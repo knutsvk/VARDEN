@@ -342,7 +342,16 @@ module define_bc_module
              ell_bc_level(comp,d,lohi,dm+ns) = BC_PER   ! density and tracers
           enddo
           ell_bc_level(comp,d,lohi,press_comp) = BC_PER   ! pressure
+
+       else if (phys_bc_level(comp,d,lohi) == POISEUILLE) then
+          ell_bc_level(comp,d,lohi,1:dm) = BC_DIR   ! vel.
+          do ns = 1, nscal
+             ell_bc_level(comp,d,lohi,dm+ns) = BC_DIR
+          enddo
+          ell_bc_level(comp,d,lohi,press_comp) = BC_NEU   ! pressure
+
        end if
+
     end do
     end do
     end do

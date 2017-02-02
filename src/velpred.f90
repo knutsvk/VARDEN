@@ -274,7 +274,7 @@ contains
        end do
 
        ! impose lo side bc's
-       if (phys_bc(1,1) .eq. INLET) then
+       if (phys_bc(1,1) .eq. INLET .or. phys_bc(1,1) .eq. POISEUILLE) then
           ulx(is,jc,1:2) = u(is-1,j,1:2)
           urx(is,jc,1:2) = u(is-1,j,1:2)
        else if (phys_bc(1,1) .eq. SLIP_WALL) then
@@ -476,7 +476,7 @@ contains
              if(i .eq. is) then
                 if (phys_bc(1,1) .eq. SLIP_WALL .or. phys_bc(1,1) .eq. NO_SLIP_WALL) then
                    umac(is,j-1) = ZERO
-                elseif (phys_bc(1,1) .eq. INLET) then
+                elseif (phys_bc(1,1) .eq. INLET .or. phys_bc(1,1) .eq. POISEUILLE) then
                    umac(is,j-1) = u(is-1,j-1,1)
                 elseif (phys_bc(1,1) .eq. OUTLET) then
                    umac(is,j-1) = min(umacr(is),ZERO)
@@ -639,7 +639,7 @@ contains
     end do
 
     ! impose lo side bc's
-    if (phys_bc(1,1) .eq. INLET) then
+    if (phys_bc(1,1) .eq. INLET .or. phys_bc(1,1) .eq. POISEUILLE) then
        ulx(is,js-1:je+1,1:2) = u(is-1,js-1:je+1,1:2)
        urx(is,js-1:je+1,1:2) = u(is-1,js-1:je+1,1:2)
     else if (phys_bc(1,1) .eq. SLIP_WALL) then
@@ -803,7 +803,7 @@ contains
     ! impose lo side bc's
     if (phys_bc(1,1) .eq. SLIP_WALL .or. phys_bc(1,1) .eq. NO_SLIP_WALL) then
        umac(is,js:je) = ZERO
-    else if (phys_bc(1,1) .eq. INLET) then
+    else if (phys_bc(1,1) .eq. INLET .or. phys_bc(1,1) .eq. POISEUILLE) then
        umac(is,js:je) = u(is-1,js:je,1)
     else if (phys_bc(1,1) .eq. OUTLET) then
        umac(is,js:je) = min(umacr(is,js:je),ZERO)
@@ -1072,7 +1072,7 @@ contains
     end do
 
     ! impose lo side bc's
-    if (phys_bc(1,1) .eq. INLET) then
+    if (phys_bc(1,1) .eq. INLET .or. phys_bc(1,1) .eq. POISEUILLE) then
        ulx(is,js-1:je+1,ks-1:ke+1,1:3) = u(is-1,js-1:je+1,ks-1:ke+1,1:3)
        urx(is,js-1:je+1,ks-1:ke+1,1:3) = u(is-1,js-1:je+1,ks-1:ke+1,1:3)
     else if (phys_bc(1,1) .eq. SLIP_WALL) then
@@ -1413,7 +1413,7 @@ contains
     enddo
 
     ! impose lo side bc's
-    if (phys_bc(1,1) .eq. INLET) then
+    if (phys_bc(1,1) .eq. INLET .or. phys_bc(1,1) .eq. POISEUILLE) then
        vlxz(is,js-1:je+1,ks:ke) = u(is-1,js-1:je+1,ks:ke,2)
        vrxz(is,js-1:je+1,ks:ke) = u(is-1,js-1:je+1,ks:ke,2)
     else if (phys_bc(1,1) .eq. SLIP_WALL .or. phys_bc(1,1) .eq. OUTLET) then
@@ -1505,7 +1505,7 @@ contains
     enddo
 
     ! impose lo side bc's
-    if (phys_bc(1,1) .eq. INLET) then
+    if (phys_bc(1,1) .eq. INLET .or. phys_bc(1,1) .eq. POISEUILLE) then
        wlxy(is,js:je,ks-1:ke+1) = u(is-1,js:je,ks-1:ke+1,3)
        wrxy(is,js:je,ks-1:ke+1) = u(is-1,js:je,ks-1:ke+1,3)
     else if (phys_bc(1,1) .eq. SLIP_WALL .or. phys_bc(1,1) .eq. OUTLET) then
@@ -1619,7 +1619,7 @@ contains
     ! impose lo side bc's
     if (phys_bc(1,1) .eq. SLIP_WALL .or. phys_bc(1,1) .eq. NO_SLIP_WALL) then
        umac(is,js:je,ks:ke) = ZERO
-    else if (phys_bc(1,1) .eq. INLET) then
+    else if (phys_bc(1,1) .eq. INLET .or. phys_bc(1,1) .eq. POISEUILLE) then
        umac(is,js:je,ks:ke) = u(is-1,js:je,ks:ke,1)
     else if (phys_bc(1,1) .eq. OUTLET) then
        umac(is,js:je,ks:ke) = min(umacr(is,js:je,ks:ke),ZERO)
@@ -2041,7 +2041,7 @@ contains
        end do
        
        ! impose lo side bc's
-       if (phys_bc(1,1) .eq. INLET) then
+       if (phys_bc(1,1) .eq. INLET .or. phys_bc(1,1) .eq. POISEUILLE) then
           ulx(is,js-1:je+1,kc,1:3) = u(is-1,js-1:je+1,k,1:3)
           urx(is,js-1:je+1,kc,1:3) = u(is-1,js-1:je+1,k,1:3)
        else if (phys_bc(1,1) .eq. SLIP_WALL) then
@@ -2199,7 +2199,7 @@ contains
        end do
        
        ! impose lo side bc's
-       if (phys_bc(1,1) .eq. INLET) then
+       if (phys_bc(1,1) .eq. INLET .or. phys_bc(1,1) .eq. POISEUILLE) then
           wlxy(is,js:je,kc) = u(is-1,js:je,k,3)
           wrxy(is,js:je,kc) = u(is-1,js:je,k,3)
        else if (phys_bc(1,1) .eq. SLIP_WALL .or. phys_bc(1,1) .eq. OUTLET) then
@@ -2535,7 +2535,7 @@ contains
           end do
           
           ! impose lo side bc's
-          if (phys_bc(1,1) .eq. INLET) then
+          if (phys_bc(1,1) .eq. INLET .or. phys_bc(1,1) .eq. POISEUILLE) then
              vlxz(is,js-1:je+1,kp) = u(is-1,js-1:je+1,k-1,2)
              vrxz(is,js-1:je+1,kp) = u(is-1,js-1:je+1,k-1,2)
           else if (phys_bc(1,1) .eq. SLIP_WALL .or. phys_bc(1,1) .eq. OUTLET) then
@@ -2643,7 +2643,7 @@ contains
           ! impose lo side bc's
           if (phys_bc(1,1) .eq. SLIP_WALL .or. phys_bc(1,1) .eq. NO_SLIP_WALL) then
              umac(is,js:je,k-1) = ZERO
-          else if (phys_bc(1,1) .eq. INLET) then
+          else if (phys_bc(1,1) .eq. INLET .or. phys_bc(1,1) .eq. POISEUILLE) then
              umac(is,js:je,k-1) = u(is-1,js:je,k-1,1)
           else if (phys_bc(1,1) .eq. OUTLET) then
              umac(is,js:je,k-1) = min(umacr(is,js:je),ZERO)

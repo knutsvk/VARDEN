@@ -1,0 +1,39 @@
+&PROBIN
+ dim_in = 2
+
+ prob_type = 6
+
+ max_levs = 3
+ ref_ratio = 2
+ regrid_int = 1
+ amr_buf_width = 1
+
+ n_cellx = 128
+ n_celly = 128
+ max_grid_size = 32
+ 
+ init_iter = 3
+ do_initial_projection = 0
+
+ max_step  = 1000
+ plot_int  = 10
+ chk_int   = -1
+
+ stop_time = 1.8
+ cflfac = 0.9
+ init_shrink = 0.1
+
+ visc_coef = 0.0004
+ diff_coef = 0.0
+
+ grav = 0.0d0
+
+ bcx_lo = -1
+ bcx_hi = -1
+ bcy_lo = -1
+ bcy_hi = -1
+
+ verbose = 1
+ mg_verbose = 1
+
+/

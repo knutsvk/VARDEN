@@ -125,6 +125,9 @@ contains
           call multifab_fill_ghost_cells(s(n),s(n-1),ng,mla%mba%rr(n-1,:), &
                                       bc(n-1),bc(n),1,dm+1,nscal)
        enddo
+    else if (prob_type .eq. 4 .or. prob_type .eq. 5 .or. prob_type .eq. 6) then
+       call ml_restrict_and_fill(nlevs, u, mla%mba%rr, bc, bcomp=1)
+       call ml_restrict_and_fill(nlevs, s, mla%mba%rr, bc, bcomp=dm+1)
     else
        call bl_error('Unsupported prob_type')
     end if
@@ -147,10 +150,11 @@ contains
     real (kind = dp_t)  :: blobrad = 0.1d0
     real (kind = dp_t)  :: xinterf = 0.50
     real (kind = dp_t)  :: winterf = 0.05
+    real (kind = dp_t)  :: rhotil = 30.0d0, delta = 0.05d0
    
 
     if (prob_type .eq. 1) then
-       u = 0.d0
+       u = ZERO
 
        s(:,:,1) = ONE
        s(:,:,2) = ZERO
@@ -232,6 +236,20 @@ contains
              if (x > xinterf+winterf) then
                 s(i,j,1) = TWO
              end if
+    else if (prob_type .eq. 9) then 
+       ! Double shear layer
+       s(:,:,1) = ONE
+       s(:,:,2) = ZERO
+       do j=lo(2),hi(2)
+          y = prob_lo(2) + dx(2)*(j + HALF)
+          do i=lo(1),hi(1)
+             x = prob_lo(1) + dx(1)*(i + HALF)
+             if (y <= HALF) then
+                u(i,j,1) = tanh(rhotil * (y - FOURTH))
+             else 
+                u(i,j,1) = tanh(rhotil * (THREE4TH - y))
+             end if
+             u(i,j,2) = delta * sin(TWO * M_PI * x)
           end do
        end do
     else

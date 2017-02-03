@@ -40,7 +40,7 @@ contains
        hi =  upb(get_box(tagboxes, i))
        select case (get_dim(mf))
        case (2)
-          call tag_boxes_2d(tp(:,:,1,1),mfp(:,:,1,1),lo,hi,ng,dx,lev)
+          call tag_boxes_2d(tp(:,:,1,1),mfp(:,:,1,:),lo,hi,ng,dx,lev)
        case  (3)
           call tag_boxes_3d(tp(:,:,:,1),mfp(:,:,:,1),lo,hi,ng,dx,lev)
        end select
@@ -52,12 +52,13 @@ contains
 
     integer          , intent(in   ) :: lo(:),hi(:),ng
     logical          , intent(  out) :: tagbox(lo(1)   :,lo(2)   :)
-    real(kind = dp_t), intent(in   ) ::     mf(lo(1)-ng:,lo(2)-ng:)
+    real(kind = dp_t), intent(in   ) ::     mf(lo(1)-ng:,lo(2)-ng:,:)
     real(dp_t)       , intent(in   ) :: dx
     integer          , intent(in   ) :: lev
 
     ! local variables
     integer :: i,j
+    real(kind = dp_t) :: vx, uy
 
     ! initially say that we do not want to tag any cells for refinement
     tagbox = .false.
@@ -68,7 +69,7 @@ contains
           ! tag all boxes where the first component of mf >= 1.01
           do j = lo(2),hi(2)
              do i = lo(1),hi(1)
-                if (mf(i,j) .gt. 1.01_dp_t) then
+                if (mf(i,j,1) .gt. 1.01_dp_t) then
                    tagbox(i,j) = .true.
                 end if
              end do
@@ -77,7 +78,7 @@ contains
           ! for level 2 tag all boxes where the first component of mf >= 1.1
           do j = lo(2),hi(2)
              do i = lo(1),hi(1)
-                if (mf(i,j) .gt. 1.1_dp_t) then
+                if (mf(i,j,1) .gt. 1.1_dp_t) then
                    tagbox(i,j) = .true.
                 end if
              end do
@@ -86,7 +87,7 @@ contains
           ! for level 3 or greater tag all boxes where the first component of mf >= 1.5
           do j = lo(2),hi(2)
              do i = lo(1),hi(1)
-                if (mf(i,j) .gt. 1.5_dp_t) then
+                if (mf(i,j,1) .gt. 1.5_dp_t) then
                    tagbox(i,j) = .true.
                 end if
              end do
@@ -119,33 +120,6 @@ contains
           do j = lo(2),hi(2)
              do i = lo(1),hi(1)
                 if (abs(mf(i,j)-1.5_dp_t) .lt. 0.4_dp_t) then
-                   tagbox(i,j) = .true.
-                end if
-             end do
-          end do
-       end select
-    else if (prob_type .eq. 3) then
-       select case(lev)
-       case (1)
-          do j = lo(2),hi(2)
-             do i = lo(1),hi(1)
-                if (mf(i,j) .gt. 1.2d0 .and. mf(i,j) .lt. 1.8d0) then
-                   tagbox(i,j) = .true.
-                end if
-             end do
-          enddo
-       case (2)
-          do j = lo(2),hi(2)
-             do i = lo(1),hi(1)
-                if (mf(i,j) .gt. 1.2d0 .and. mf(i,j) .lt. 1.8d0) then
-                   tagbox(i,j) = .true.
-                end if
-             end do
-          end do
-       case default
-          do j = lo(2),hi(2)
-             do i = lo(1),hi(1)
-                if (mf(i,j) .gt. 1.2d0 .and. mf(i,j) .lt. 1.8d0) then
                    tagbox(i,j) = .true.
                 end if
              end do

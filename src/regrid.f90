@@ -8,6 +8,7 @@ module regrid_module
   use restart_module
   use box_util_module
   use tag_boxes_module, only : tagging_needs_ghost_cells
+  use probin_module, only : prob_type
 
   implicit none
 
@@ -146,8 +147,14 @@ contains
           end if
        end if
 
-       call make_new_grids(new_grid,la_array(nl),la_array(nl+1),sold(nl),dx(nl,1), &
-                           amr_buf_width,ref_ratio,nl,max_grid_size)
+       if (prob_type .eq. 6) then 
+          ! Want to tag boxes based on velocity distribution 
+          call make_new_grids(new_grid, la_array(nl), la_array(nl+1), uold(nl), &
+                              dx(nl,1), amr_buf_width, ref_ratio, nl, max_grid_size)
+       else
+          call make_new_grids(new_grid, la_array(nl), la_array(nl+1), sold(nl), &
+                              dx(nl,1), amr_buf_width, ref_ratio, nl, max_grid_size)
+       end if
 
        if (new_grid) then
 

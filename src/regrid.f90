@@ -147,14 +147,9 @@ contains
           end if
        end if
 
-       if (prob_type .eq. 6) then 
-          ! Want to tag boxes based on velocity distribution 
-          call make_new_grids(new_grid, la_array(nl), la_array(nl+1), uold(nl), &
-                              dx(nl,1), amr_buf_width, ref_ratio, nl, max_grid_size)
-       else
-          call make_new_grids(new_grid, la_array(nl), la_array(nl+1), sold(nl), &
-                              dx(nl,1), amr_buf_width, ref_ratio, nl, max_grid_size)
-       end if
+       call make_new_grids(new_grid, la_array(nl), la_array(nl+1), sold(nl), & 
+                           dx(nl,1), amr_buf_width, ref_ratio, nl, max_grid_size, &
+                           aux_tag_mf=sold(nl))
 
        if (new_grid) then
 

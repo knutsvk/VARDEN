@@ -15,32 +15,30 @@ contains
 
   subroutine tag_boxes(mf,tagboxes,dx,lev,aux_tag_mf)
 
-    type( multifab)         , intent(in   ) :: mf
-    type(lmultifab)         , intent(inout) :: tagboxes
-    real(dp_t)              , intent(in   ) :: dx
-    integer                 , intent(in   ) :: lev
-    type(multifab), optional, intent(in   ) :: aux_tag_mf
+    type( multifab)          , intent(in   ) :: mf
+    type(lmultifab)          , intent(inout) :: tagboxes
+    real(dp_t)               , intent(in   ) :: dx
+    integer                  , intent(in   ) :: lev
+    type( multifab), optional, intent(in   ) :: aux_tag_mf
     ! aux_tag_mf allows user to pass in additional multifabs for tagging logic
     
     ! local variables
     real(kind = dp_t), pointer :: mfp(:,:,:,:)
-    logical          , pointer :: tp(:,:,:,:)
+    real(kind = dp_t), pointer ::  up(:,:,:,:)
+    logical          , pointer ::  tp(:,:,:,:)
     integer           :: i, lo(get_dim(mf)), hi(get_dim(mf)), ng
-
-    if (present(aux_tag_mf)) then
-       call bl_error("tag_boxes.f90: aux_tag_mf passed to tag_boxes without implementation")
-    end if
 
     ng = nghost(mf)
 
     do i = 1, nfabs(mf)
        mfp => dataptr(mf, i)
        tp  => dataptr(tagboxes, i)
+       !up  => dataptr(aux_tag_mf, i)
        lo =  lwb(get_box(tagboxes, i))
        hi =  upb(get_box(tagboxes, i))
        select case (get_dim(mf))
        case (2)
-          call tag_boxes_2d(tp(:,:,1,1),mfp(:,:,1,:),lo,hi,ng,dx,lev)
+          call tag_boxes_2d(tp(:,:,1,1),mfp(:,:,1,:),up(:,:,1,:),lo,hi,ng,dx,lev)
        case  (3)
           call tag_boxes_3d(tp(:,:,:,1),mfp(:,:,:,1),lo,hi,ng,dx,lev)
        end select
@@ -48,17 +46,17 @@ contains
 
   end subroutine tag_boxes
 
-  subroutine tag_boxes_2d(tagbox,mf,lo,hi,ng,dx,lev)
+  subroutine tag_boxes_2d(tagbox,mf,u,lo,hi,ng,dx,lev)
 
     integer          , intent(in   ) :: lo(:),hi(:),ng
     logical          , intent(  out) :: tagbox(lo(1)   :,lo(2)   :)
     real(kind = dp_t), intent(in   ) ::     mf(lo(1)-ng:,lo(2)-ng:,:)
+    real(kind = dp_t), intent(in   ) ::      u(lo(1)-ng:,lo(2)-ng:,:)
     real(dp_t)       , intent(in   ) :: dx
     integer          , intent(in   ) :: lev
 
     ! local variables
     integer :: i,j
-    real(kind = dp_t) :: vx, uy
 
     ! initially say that we do not want to tag any cells for refinement
     tagbox = .false.
@@ -121,6 +119,48 @@ contains
              do i = lo(1),hi(1)
                 if (abs(mf(i,j)-1.5_dp_t) .lt. 0.4_dp_t) then
                    tagbox(i,j) = .true.
+                end if
+             end do
+          end do
+       end select
+    else if (prob_type .eq. 9) then
+       select case(lev)
+       case (1)
+          do j = lo(2),hi(2)
+             do i = lo(1),hi(1)
+                ! vx = (mf(i+1,j,2) - mf(i-1,j,2)) / (2.0d0 * dx)
+                ! uy = (mf(i,j+1,1) - mf(i,j-1,1)) / (2.0d0 * dx) 
+                ! if (abs(vx-uy) > 1.0d0)  then
+                !    tagbox(i,j) = .true.
+                ! end if
+                if(abs(u(i,j,1)) < 1.0d0) then 
+                   tagbox(i,j) = .true. 
+                end if
+             end do
+          enddo
+       case (2)
+          do j = lo(2),hi(2)
+             do i = lo(1),hi(1)
+                ! vx = (mf(i+1,j,2) - mf(i-1,j,2)) / (2.0d0 * dx)
+                ! uy = (mf(i,j+1,1) - mf(i,j-1,1)) / (2.0d0 * dx) 
+                ! if (abs(vx-uy) > 10.0d0)  then
+                !    tagbox(i,j) = .true.
+                ! end if
+                if(abs(u(i,j,1)) < 0.1d0) then 
+                   tagbox(i,j) = .true. 
+                end if
+             end do
+          end do
+       case default
+          do j = lo(2),hi(2)
+             do i = lo(1),hi(1)
+                ! vx = (mf(i+1,j,2) - mf(i-1,j,2)) / (2.0d0 * dx)
+                ! uy = (mf(i,j+1,1) - mf(i,j-1,1)) / (2.0d0 * dx) 
+                ! if (abs(vx-uy) > 20.0d0)  then
+                !    tagbox(i,j) = .true.
+                ! end if
+                if(abs(u(i,j,1)) < 0.01d0) then 
+                   tagbox(i,j) = .true. 
                 end if
              end do
           end do

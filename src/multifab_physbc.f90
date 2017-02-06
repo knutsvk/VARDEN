@@ -88,7 +88,7 @@ contains
     ! Local variables
     integer :: i,j
     integer :: ngylo, ngyhi
-    real(kind=dp_t) :: y
+    real(kind=dp_t) :: x,y
 
     if (bc(2,1) .eq. INTERIOR) then  ! y-lo direction
        ngylo = ng
@@ -135,10 +135,15 @@ contains
     else if (bc(1,1) .eq. INTERIOR) then
        ! do nothing
     else if (bc(1,1) .eq. PARABOLA) then
-       do j = lo(2)-ngylo, hi(2)+ngyhi
+       do j = lo(2)-ngylo, hi(2)+ngylo
+          y = dx(2) * (HALF + j)
           do i = 1,ng
-             y = dx(2) * (HALF + j)
-             s(lo(1)-i,j) = HALF * y * (ONE - y)
+             x = dx(1) * (HALF + i)
+             if (icomp == 1) then 
+                s(lo(1)-i,j) = HALF * y * (ONE - y)
+             else
+                s(lo(1)-i,j) = ZERO
+             end if
           end do 
        end do
     else 

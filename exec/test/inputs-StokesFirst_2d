@@ -1,24 +1,18 @@
 &PROBIN
  dim_in = 2
 
- prob_type = 5
+ prob_type = 6
 
  max_levs = 1
- regrid_int = 10
- amr_buf_width = 10
 
- n_cellx = 100
- n_celly = 10
- max_grid_size = 16
+ n_cellx = 1000
+ n_celly = 100
+ max_grid_size = 10
  
- cluster_min_eff = 0.9d0
- cluster_min_width = 4
- cluster_blocking_factor = 4
-
  prob_hi_x = 1.0
  prob_hi_y = 0.1
 
- init_iter = 1
+ init_iter = 3
  do_initial_projection = 1
 
  max_step  = 10000

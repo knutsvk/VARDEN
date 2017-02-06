@@ -196,7 +196,7 @@ contains
        u(:,:,2) = ZERO
        s(:,:,1) = ONE
        s(:,:,2) = ZERO
-    else if (prob_type .eq. 6) then
+    else if (prob_type .eq. 7) then
        ! Stokes first problem
        u = ZERO
        s(:,:,1) = ONE

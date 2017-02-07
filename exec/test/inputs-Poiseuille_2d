@@ -12,10 +12,10 @@
  prob_hi_x = 1.0
  prob_hi_y = 1.0
 
- init_iter = 1
+ init_iter = 3
  do_initial_projection = 1
 
- max_step  = 50
+ max_step  = 500
  plot_int  = 1
  chk_int   = -1
 
@@ -27,11 +27,14 @@
  diff_coef = 0.0
 
  grav = 0.0d0
+ dpdx = 1.0d0
 
- bcx_lo = 18
+ bcx_lo = 11
  bcx_hi = 12
  bcy_lo = 15
  bcy_hi = 15
+
+ u_bcx_lo = 0.1d0
 
  verbose = 1
  mg_verbose = 1

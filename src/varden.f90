@@ -27,7 +27,8 @@ subroutine varden()
                             init_iter, max_step, &
                             stop_time, restart, chk_int, plot_int, regrid_int, init_shrink, &
                             fixed_dt, nodal, ref_ratio, fixed_grids, grids_file_name, &
-                            do_initial_projection, grav, probin_init, probin_close
+                            do_initial_projection, grav, probin_init, probin_close, & 
+                            dpdx
 
   implicit none
 
@@ -425,7 +426,7 @@ contains
 
        call setval(   unew(n),ZERO, all=.true.)
        call setval(   snew(n),ZERO, all=.true.)
-       call setval(ext_vel_force(n) ,ZERO, 1,dm-1,all=.true.)
+       call setval(ext_vel_force(n) ,dpdx, 1,dm-1,all=.true.)
        call setval(ext_vel_force(n) ,grav,dm,   1,all=.true.)
        call setval(ext_scal_force(n),ZERO, all=.true.)
 

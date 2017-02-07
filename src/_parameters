@@ -12,6 +12,7 @@ nscal          integer          2
 prob_type      integer          1
 
 grav           real             0.d0
+dpdx           real             0.d0
 boussinesq     integer          0
 
 max_step       integer          1

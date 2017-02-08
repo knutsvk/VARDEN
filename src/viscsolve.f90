@@ -381,7 +381,7 @@ contains
 
     do n = 1, nlevs
        call multifab_fill_boundary_c(snew(n),icomp,1)
-       call multifab_physbc(snew(n),icomp,bc_comp,1,the_bc_tower%bc_tower_array(n),dx_in=dx(n,:))
+       call multifab_physbc(snew(n),icomp,bc_comp,1,the_bc_tower%bc_tower_array(n))
     enddo
 
     do n = nlevs, 2, -1

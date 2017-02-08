@@ -4,7 +4,6 @@ module multifab_physbc_module
   use define_bc_module
   use bl_types
   use bl_error_module
-  use bl_constants_module
   use probin_module, only: rho_bc, trac_bc, u_bc, v_bc, w_bc
 
   implicit none
@@ -26,27 +25,17 @@ contains
     ! Local
     integer                  :: lo(get_dim(s)),hi(get_dim(s)),dm
     integer                  :: i,ng,scomp,bccomp
-    real(kind=dp_t)          :: time,dx(get_dim(s))
-    real(kind=dp_t)          :: prob_lo(get_dim(s)),prob_hi(get_dim(s))
     real(kind=dp_t), pointer :: sp(:,:,:,:)
     
     type(bl_prof_timer), save :: bpt
 
     dm = get_dim(s)
+
     ng = nghost(s)
+
     if (ng == 0) return
 
-    ! set optional arguments
-    time    = ZERO
-    dx      = ZERO
-    prob_lo = ZERO
-    prob_hi = ZERO
-    if (present(time_in))       time = time_in
-    if (present(dx_in))           dx = dx_in
-    if (present(prob_lo_in)) prob_lo = prob_lo_in
-    if (present(prob_hi_in)) prob_hi = prob_hi_in
-
-    call build(bpt, "multifab_physbc")
+    call build(bpt,"multifab_physbc")
 
     do i=1,nfabs(s)
        sp => dataptr(s,i)
@@ -57,15 +46,13 @@ contains
           do scomp = start_scomp,start_scomp+num_comp-1
              bccomp = start_bccomp + scomp - start_scomp
              call physbc_2d(sp(:,:,1,scomp), lo, hi, ng, &
-                            the_bc_level%adv_bc_level_array(i,:,:,bccomp), bccomp, &
-                            time, dx, prob_lo, prob_hi)
+                            the_bc_level%adv_bc_level_array(i,:,:,bccomp),bccomp)
           end do
        case (3)
           do scomp = start_scomp,start_scomp+num_comp-1
              bccomp = start_bccomp + scomp - start_scomp
              call physbc_3d(sp(:,:,:,scomp), lo, hi, ng, &
-                            the_bc_level%adv_bc_level_array(i,:,:,bccomp), bccomp, &
-                            time, dx, prob_lo, prob_hi)
+                            the_bc_level%adv_bc_level_array(i,:,:,bccomp),bccomp)
           end do
        end select
     end do
@@ -74,18 +61,18 @@ contains
 
   end subroutine multifab_physbc
 
-  subroutine physbc_2d(s,lo,hi,ng,bc,icomp,time,dx,prob_lo,prob_hi)
+  subroutine physbc_2d(s,lo,hi,ng,bc,icomp)
 
-    use bl_constants_module
     use bc_module
+    use bl_constants_module
 
     integer        , intent(in   ) :: lo(:),hi(:),ng
     real(kind=dp_t), intent(inout) :: s(lo(1)-ng:,lo(2)-ng:)
     integer        , intent(in   ) :: bc(:,:)
     integer        , intent(in   ) :: icomp
-    real(kind=dp_t), intent(in   ) :: time,dx(:),prob_lo(:),prob_hi(:)
 
     ! Local variables
+
     integer :: i,j
     integer :: ngylo, ngyhi
 
@@ -117,7 +104,7 @@ contains
     else if (bc(1,1) .eq. HOEXTRAP) then
        do j = lo(2)-ngylo, hi(2)+ngyhi
           s(lo(1)-ng:lo(1)-1,j) = EIGHTH* &
-               (FIFTEEN*s(lo(1),j) - TEN*s(lo(1)+1,j) + THREE*s(lo(1)+2,j))
+               (15.0_dp_t*s(lo(1),j) - 10.0_dp_t*s(lo(1)+1,j) + 3.0_dp_t*s(lo(1)+2,j))
        end do
     else if (bc(1,1) .eq. REFLECT_EVEN) then
        do j = lo(2)-ngylo, hi(2)+ngyhi
@@ -248,7 +235,7 @@ contains
 
   end subroutine physbc_2d
 
-  subroutine physbc_3d(s,lo,hi,ng,bc,icomp,time,dx,prob_lo,prob_hi)
+  subroutine physbc_3d(s,lo,hi,ng,bc,icomp)
 
     use bc_module
     use bl_constants_module
@@ -257,7 +244,6 @@ contains
     real(kind=dp_t), intent(inout) :: s(lo(1)-ng:, lo(2)-ng:, lo(3)-ng:)
     integer        , intent(in   ) :: bc(:,:)
     integer        , intent(in   ) :: icomp
-    real(kind=dp_t), intent(in   ) :: time,dx(:),prob_lo(:),prob_hi(:)
 
     ! Local variables
 

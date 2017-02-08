@@ -92,7 +92,7 @@ contains
              end do
           end do
        end select
-    else if (prob_type .eq. 3 .or. prob_type .eq. 4 .or. prob_type .eq. 5) then
+    else if (prob_type .eq. 3) then
        select case(lev)
        case (1)
           do j = lo(2),hi(2)

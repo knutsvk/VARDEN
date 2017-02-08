@@ -93,7 +93,7 @@ contains
     real(kind=dp_t), intent(in   ) :: visc_fac
 
     real(kind=dp_t) :: lapu_local(2)
-    integer :: i,j,n
+    integer :: i,j
 
        if (boussinesq .eq. 1) then
           do j = lo(2), hi(2)
@@ -155,7 +155,7 @@ contains
     real(kind=dp_t), intent(in   ) :: visc_fac
 
     real(kind=dp_t) :: lapu_local(3)
-    integer :: i,j,k,n
+    integer :: i,j,k
 
        if (boussinesq .eq. 1) then
           do k = lo(3), hi(3)
@@ -298,7 +298,7 @@ contains
     real(kind=dp_t), intent(in   ) :: diff_fac
 
     real(kind=dp_t) :: laps_local(2:nscal)
-    integer :: i,j,n
+    integer :: i,j
 
     scal_force = 0.0_dp_t
 
@@ -341,7 +341,7 @@ contains
     real(kind=dp_t), intent(in   ) :: diff_fac
 
     real(kind=dp_t) :: laps_local(2:nscal)
-    integer :: i,j,k,n
+    integer :: i,j,k
 
     scal_force = 0.0_dp_t
 

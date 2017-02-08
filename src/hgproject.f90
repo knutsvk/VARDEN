@@ -379,11 +379,6 @@ contains
       if (phys_bc(2,1) .eq. INLET) gp(lo(1)-1:hi(1)+1,lo(2)-1,:) = ZERO
       if (phys_bc(2,2) .eq. INLET) gp(lo(1)-1:hi(1)+1,hi(2)+1,:) = ZERO
 
-      if (phys_bc(1,1) .eq. POISEUILLE) gp(lo(1)-1,lo(2)-1:hi(2)+1,:) = ZERO
-      if (phys_bc(1,2) .eq. POISEUILLE) gp(hi(1)+1,lo(2)-1:hi(2)+1,:) = ZERO
-      if (phys_bc(2,1) .eq. POISEUILLE) gp(lo(1)-1:hi(1)+1,lo(2)-1,:) = ZERO
-      if (phys_bc(2,2) .eq. POISEUILLE) gp(lo(1)-1:hi(1)+1,hi(2)+1,:) = ZERO
-
       ! quantity projected is U
       if (proj_type .eq. initial_projection) then
 
@@ -447,13 +442,6 @@ contains
       if (phys_bc(2,2) .eq. INLET) gp(lo(1)-1:hi(1)+1,hi(2)+1,lo(3)-1:hi(3)+1,:) = ZERO
       if (phys_bc(3,1) .eq. INLET) gp(lo(1)-1:hi(1)+1,lo(2)-1:hi(2)+1,lo(3)-1,:) = ZERO
       if (phys_bc(3,2) .eq. INLET) gp(lo(1)-1:hi(1)+1,lo(2)-1:hi(2)+1,hi(3)+1,:) = ZERO
-
-      if (phys_bc(1,1) .eq. POISEUILLE) gp(lo(1)-1,lo(2)-1:hi(2)+1,lo(3)-1:hi(3)+1,:) = ZERO
-      if (phys_bc(1,2) .eq. POISEUILLE) gp(hi(1)+1,lo(2)-1:hi(2)+1,lo(3)-1:hi(3)+1,:) = ZERO
-      if (phys_bc(2,1) .eq. POISEUILLE) gp(lo(1)-1:hi(1)+1,lo(2)-1,lo(3)-1:hi(3)+1,:) = ZERO
-      if (phys_bc(2,2) .eq. POISEUILLE) gp(lo(1)-1:hi(1)+1,hi(2)+1,lo(3)-1:hi(3)+1,:) = ZERO
-      if (phys_bc(3,1) .eq. POISEUILLE) gp(lo(1)-1:hi(1)+1,lo(2)-1:hi(2)+1,lo(3)-1,:) = ZERO
-      if (phys_bc(3,2) .eq. POISEUILLE) gp(lo(1)-1:hi(1)+1,lo(2)-1:hi(2)+1,hi(3)+1,:) = ZERO
 
       ! quantity projected is U
       if (proj_type .eq. initial_projection) then

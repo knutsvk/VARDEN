@@ -316,7 +316,7 @@ contains
           end do
           
           ! impose lo side bc's
-          if (phys_bc(1,1) .eq. INLET .or. phys_bc(1,1) .eq. POISEUILLE) then
+          if (phys_bc(1,1) .eq. INLET) then
              slx(is,jc) = s(is-1,j,comp)
              srx(is,jc) = s(is-1,j,comp)
           else if (phys_bc(1,1) .eq. SLIP_WALL) then
@@ -609,7 +609,7 @@ contains
              enddo
              
              ! impose lo side bc's
-             if (phys_bc(1,1) .eq. INLET .or. phys_bc(1,1) .eq. POISEUILLE) then
+             if (phys_bc(1,1) .eq. INLET) then
                 sedgex(is,j-1,comp) = s(is-1,j-1,comp)
              else if (phys_bc(1,1) .eq. SLIP_WALL) then
                 if (is_vel .and. comp .eq. 1) then
@@ -824,7 +824,7 @@ contains
        end do
        
        ! impose lo side bc's
-       if (phys_bc(1,1) .eq. INLET .or. phys_bc(1,1) .eq. POISEUILLE) then
+       if (phys_bc(1,1) .eq. INLET) then
           slx(is,js-1:je+1) = s(is-1,js-1:je+1,comp)
           srx(is,js-1:je+1) = s(is-1,js-1:je+1,comp)
        else if (phys_bc(1,1) .eq. SLIP_WALL) then
@@ -1015,7 +1015,7 @@ contains
        enddo
        
        ! impose lo side bc's
-       if (phys_bc(1,1) .eq. INLET .or. phys_bc(1,1) .eq. POISEUILLE) then
+       if (phys_bc(1,1) .eq. INLET) then
           sedgex(is,js:je,comp) = s(is-1,js:je,comp)
        else if (phys_bc(1,1) .eq. SLIP_WALL) then
           if (is_vel .and. comp .eq. 1) then
@@ -1462,7 +1462,7 @@ contains
           end do
           
           ! impose lo side bc's
-          if (phys_bc(1,1) .eq. INLET .or. phys_bc(1,1) .eq. POISEUILLE) then
+          if (phys_bc(1,1) .eq. INLET) then
              slx(is,js-1:je+1,kc) = s(is-1,js-1:je+1,k,comp)
              srx(is,js-1:je+1,kc) = s(is-1,js-1:je+1,k,comp)
           else if (phys_bc(1,1) .eq. SLIP_WALL) then
@@ -1629,7 +1629,7 @@ contains
           end do
           
           ! impose lo side bc's
-          if (phys_bc(1,1) .eq. INLET .or. phys_bc(1,1) .eq. POISEUILLE) then
+          if (phys_bc(1,1) .eq. INLET) then
              slxy(is,js:je,kc) = s(is-1,js:je,k,comp)
              srxy(is,js:je,kc) = s(is-1,js:je,k,comp)
           else if (phys_bc(1,1) .eq. SLIP_WALL) then
@@ -2162,7 +2162,7 @@ contains
              end do
 
              ! impose lo side bc's
-             if (phys_bc(1,1) .eq. INLET .or. phys_bc(1,1) .eq. POISEUILLE) then
+             if (phys_bc(1,1) .eq. INLET) then
                 slxz(is,js-1:je+1,kp) = s(is-1,js-1:je+1,k-1,comp)
                 srxz(is,js-1:je+1,kp) = s(is-1,js-1:je+1,k-1,comp)
              else if (phys_bc(1,1) .eq. SLIP_WALL) then
@@ -2354,7 +2354,7 @@ contains
              end do
              
              ! impose lo side bc's
-             if (phys_bc(1,1) .eq. INLET .or. phys_bc(1,1) .eq. POISEUILLE) then
+             if (phys_bc(1,1) .eq. INLET) then
                 sedgex(is,js:je,k-1,comp) = s(is-1,js:je,k-1,comp)
              else if (phys_bc(1,1) .eq. SLIP_WALL) then
                 if (is_vel .and. comp .eq. 1) then
@@ -2772,7 +2772,7 @@ contains
        end do
 
        ! impose lo side bc's
-       if (phys_bc(1,1) .eq. INLET .or. phys_bc(1,1) .eq. POISEUILLE) then
+       if (phys_bc(1,1) .eq. INLET) then
           slx(is,js-1:je+1,ks-1:ke+1) = s(is-1,js-1:je+1,ks-1:ke+1,comp)
           srx(is,js-1:je+1,ks-1:ke+1) = s(is-1,js-1:je+1,ks-1:ke+1,comp)
        else if (phys_bc(1,1) .eq. SLIP_WALL) then
@@ -3037,7 +3037,7 @@ contains
        enddo
        
        ! impose lo side bc's
-       if (phys_bc(1,1) .eq. INLET .or. phys_bc(1,1) .eq. POISEUILLE) then
+       if (phys_bc(1,1) .eq. INLET) then
           slxy(is,js:je,ks-1:ke+1) = s(is-1,js:je,ks-1:ke+1,comp)
           srxy(is,js:je,ks-1:ke+1) = s(is-1,js:je,ks-1:ke+1,comp)
        else if (phys_bc(1,1) .eq. SLIP_WALL) then
@@ -3122,7 +3122,7 @@ contains
        enddo
 
        ! impose lo side bc's
-       if (phys_bc(1,1) .eq. INLET .or. phys_bc(1,1) .eq. POISEUILLE) then
+       if (phys_bc(1,1) .eq. INLET) then
           slxz(is,js-1:je+1,ks:ke) = s(is-1,js-1:je+1,ks:ke,comp)
           srxz(is,js-1:je+1,ks:ke) = s(is-1,js-1:je+1,ks:ke,comp)
        else if (phys_bc(1,1) .eq. SLIP_WALL) then
@@ -3590,7 +3590,7 @@ contains
                 else
                    sedgex(is,j,k,comp) = sedgerx(is,j,k)
                 endif
-             elseif (phys_bc(1,1) .eq. INLET .or. phys_bc(1,1) .eq. POISEUILLE) then
+             elseif (phys_bc(1,1) .eq. INLET) then
                 sedgex(is,j,k,comp) = s(is-1,j,k,comp)
              elseif (phys_bc(1,1) .eq. OUTLET) then
                 if (is_vel .and. comp.eq.1) then

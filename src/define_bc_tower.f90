@@ -157,7 +157,7 @@ module define_bc_module
 
   subroutine adv_bc_level_build(adv_bc_level,phys_bc_level,default_value)
 
-    use probin_module, only : nscal,extrap_comp
+    use probin_module, only : nscal, extrap_comp
 
     integer  , intent(inout) ::  adv_bc_level(0:,:,:,:)
     integer  , intent(in   ) :: phys_bc_level(0:,:,:)
@@ -263,7 +263,7 @@ module define_bc_module
 
   subroutine ell_bc_level_build(ell_bc_level,phys_bc_level,default_value)
 
-    use probin_module, only : nscal
+    use probin_module, only : nscal, prob_type
 
     integer  , intent(inout) ::  ell_bc_level(0:,:,:,:)
     integer  , intent(in   ) :: phys_bc_level(0:,:,:)
@@ -342,13 +342,8 @@ module define_bc_module
              ell_bc_level(comp,d,lohi,dm+ns) = BC_PER   ! density and tracers
           enddo
           ell_bc_level(comp,d,lohi,press_comp) = BC_PER   ! pressure
-
-       else if (phys_bc_level(comp,d,lohi) == POISEUILLE) then
-          ell_bc_level(comp,d,lohi,1:dm) = BC_DIR   ! vel.
-          do ns = 1, nscal
-             ell_bc_level(comp,d,lohi,dm+ns) = BC_DIR
-          enddo
-          ell_bc_level(comp,d,lohi,press_comp) = BC_NEU   ! pressure
+          ! Periodicity for all components except pressure (Poiseuille flow)
+          if (prob_type .eq. 6) ell_bc_level(comp,d,lohi,press_comp) = BC_DIR
 
        end if
 

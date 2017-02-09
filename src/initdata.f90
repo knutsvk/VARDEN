@@ -107,7 +107,7 @@ contains
     enddo
 
     if (prob_type .eq. 1 .or. prob_type .eq. 2 .or. prob_type .eq. 4 & 
-        .or. prob_type .eq. 5 .or. prob_type .eq. 6) then
+        .or. prob_type .eq. 5 .or. prob_type .eq. 6 .or. prob_type .eq. 7) then
        call ml_restrict_and_fill(nlevs, u, mla%mba%rr, bc, bcomp=1)
        call ml_restrict_and_fill(nlevs, s, mla%mba%rr, bc, bcomp=dm+1)
     else if (prob_type .eq. 3) then

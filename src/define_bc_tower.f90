@@ -332,8 +332,11 @@ module define_bc_module
              ell_bc_level(comp,d,lohi,dm+ns) = BC_PER   ! density and tracers
           enddo
           ell_bc_level(comp,d,lohi,press_comp) = BC_PER   ! pressure
-          ! Periodicity for all components except pressure (Poiseuille flow)
-          if (prob_type .eq. 6) ell_bc_level(comp,d,lohi,press_comp) = BC_DIR
+          ! Periodicity for all components except pressure 
+          ! Poiseuille flow / Stokes first problem
+          if (prob_type .eq. 6 .or. prob_type .eq. 7) then
+             ell_bc_level(comp,d,lohi,press_comp) = BC_DIR
+          end if
 
        end if
 

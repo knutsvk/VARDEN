@@ -42,13 +42,11 @@
  bcz_lo = 15
  bcz_hi = 15
 
- rho_bc(1,1) = 1.d0
+ rho_bcx_lo = 1.d0
+ trac_bcx_lo = 1.d0
+ u_bcx_lo = 1.d0
 
- trac_bc(1,1) = 1.d0
-
- u_bc(1,1) = 1.d0
-
-  verbose = 1
+ verbose = 1
  mg_verbose = 1
 
 /

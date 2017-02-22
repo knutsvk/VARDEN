@@ -15,7 +15,7 @@ module velocity_advance_module
 contains
 
   subroutine velocity_advance(mla,uold,unew,sold,lapu,rhohalf,umac,gp, &
-                              ext_vel_force,mac_rhs,dx,dt,the_bc_tower)
+                              ext_vel_force,dx,dt,the_bc_tower)
 
     use viscous_module, only : visc_solve
     use mkflux_module , only : mkflux
@@ -32,7 +32,6 @@ contains
     type(multifab) , intent(in   ) :: rhohalf(:)
     type(multifab) , intent(in   ) :: gp(:)
     type(multifab) , intent(in   ) :: ext_vel_force(:)
-    type(multifab) , intent(in   ) :: mac_rhs(:)
     real(kind=dp_t), intent(in   ) :: dx(:,:),dt
     type(bc_tower) , intent(in   ) :: the_bc_tower
 
@@ -73,7 +72,7 @@ contains
     ! Create the edge state velocities
     !********************************************************
 
-    call mkflux(mla,uold,uedge,uflux,umac,vel_force,mac_rhs,dx,dt,&
+    call mkflux(mla,uold,uedge,uflux,umac,vel_force,dx,dt,&
                 the_bc_tower%bc_tower_array,is_vel,is_conservative)
 
     !********************************************************
@@ -114,7 +113,7 @@ contains
        end if
        
        if (parallel_IOProcessor()) write(6,*) 'Doing the viscous solve ...'
-       call visc_solve(mla,unew,lapu,rhohalf,mac_rhs,dx,visc_mu,the_bc_tower)
+       call visc_solve(mla,unew,lapu,rhohalf,dx,visc_mu,the_bc_tower)
     end if
 
     if (verbose .ge. 1) then

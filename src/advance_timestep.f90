@@ -46,7 +46,6 @@ contains
     type(multifab) :: lapu(mla%nlevel)
     type(multifab) :: umac(mla%nlevel, mla%dim)
     type(multifab) :: rhohalf(mla%nlevel)
-    type(multifab) :: mac_rhs(mla%nlevel)
 
     real(kind=dp_t) ::  sa_time,  sa_time_start,  sa_time_max
     real(kind=dp_t) ::  va_time,  va_time_start,  va_time_max
@@ -63,13 +62,9 @@ contains
     nlevs = mla%nlevel
 
     do n = 1,nlevs
-       ! We must build mac_rhs with one ghost cell because if viscous, 
-       !    the RHS includes a term that looks like grad(divu)
-       call multifab_build(mac_rhs(n), mla%la(n),     1, 1)
        call multifab_build(   lapu(n), mla%la(n),    dm, 0)
        call multifab_build(rhohalf(n), mla%la(n),     1, 1)
 
-       call setval(mac_rhs(n),0.d0,all=.true.)
        call setval(rhohalf(n),0.d0,all=.true.)
 
        do i = 1,dm
@@ -97,7 +92,7 @@ contains
     mac_time_start = parallel_wtime()
  
     call build(bpt_mac, "MAC_Project")
-    call macproject(mla,umac,sold,mac_rhs,dx,the_bc_tower,press_comp)
+    call macproject(mla,umac,sold,dx,the_bc_tower,press_comp)
     call destroy(bpt_mac)
 
     call parallel_barrier()
@@ -122,7 +117,7 @@ contains
     va_time_start = parallel_wtime()
     call build(bpt_v, "Velocity_update")
     call velocity_advance(mla,uold,unew,sold,lapu,rhohalf,umac,gp, &
-                          ext_vel_force,mac_rhs,dx,dt,the_bc_tower)
+                          ext_vel_force,dx,dt,the_bc_tower)
     call destroy(bpt_v)
     call parallel_barrier()
     va_time = parallel_wtime() - va_time_start
@@ -141,7 +136,6 @@ contains
     do n = 1,nlevs
        call multifab_destroy(lapu(n))
        call multifab_destroy(rhohalf(n))
-       call multifab_destroy(mac_rhs(n))
        do i = 1,dm
          call multifab_destroy(umac(n,i))
        end do

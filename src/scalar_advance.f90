@@ -35,7 +35,6 @@ contains
 
     ! local variables
     type(multifab) :: scal_force(mla%nlevel)
-    type(multifab) :: divu(mla%nlevel)
     type(multifab) :: laps(mla%nlevel)
     type(multifab) :: sflux(mla%nlevel,mla%dim)
     type(multifab) :: sedge(mla%nlevel,mla%dim)
@@ -60,7 +59,6 @@ contains
 
     do n = 1, nlevs
        call multifab_build( scal_force(n),ext_scal_force(n)%la,nscal,1)
-       call multifab_build( divu(n),mla%la(n),    1,1)
        call multifab_build( laps(n),mla%la(n),nscal,0)
        do i = 1,dm
          call multifab_build_edge(sflux(n,i),scal_force(n)%la,nscal,0,i)
@@ -70,7 +68,6 @@ contains
        end do
 
        call setval(scal_force(n),0.0_dp_t,all=.true.)
-       call setval(divu(n),0.0_dp_t,all=.true.)
        call setval(laps(n),0.0_dp_t,all=.true.)
     enddo
 
@@ -99,7 +96,7 @@ contains
     ! Create edge state scalars/fluxes
     !***********************************
 
-    call mkflux(mla,sold,sedge,sflux,umac,scal_force,divu,dx,dt, &
+    call mkflux(mla,sold,sedge,sflux,umac,scal_force,dx,dt, &
                 the_bc_tower%bc_tower_array,is_vel,is_conservative)
 
     !***********************************
@@ -134,7 +131,6 @@ contains
 
     do n = 1,nlevs
        call multifab_destroy(scal_force(n))
-       call multifab_destroy(divu(n))
        do i = 1,dm
          call multifab_destroy(sflux(n,i))
          call multifab_destroy(sedge(n,i))

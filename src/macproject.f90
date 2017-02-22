@@ -17,7 +17,7 @@ module macproject_module
 
 contains 
 
-  subroutine macproject(mla,umac,rho,mac_rhs,dx,the_bc_tower,bc_comp)
+  subroutine macproject(mla,umac,rho,dx,the_bc_tower,bc_comp)
 
     use probin_module            , only : stencil_order, use_hypre
     use mac_hypre_module         , only : mac_hypre
@@ -28,7 +28,6 @@ contains
     type(ml_layout), intent(in   ) :: mla
     type(multifab ), intent(inout) :: umac(:,:)
     type(multifab ), intent(inout) :: rho(:)
-    type(multifab ), intent(inout) :: mac_rhs(:)
     real(dp_t)     , intent(in   ) :: dx(:,:)
     type(bc_tower ), intent(in   ) :: the_bc_tower
     integer        , intent(in   ) :: bc_comp
@@ -66,7 +65,7 @@ contains
        end do
     end do
 
-    call divumac(nlevs,umac,mac_rhs,rh,dx,mla%mba%rr,.true.)
+    call divumac(nlevs,umac,rh,dx,mla%mba%rr,.true.)
 
     call mk_mac_coeffs(nlevs,mla,rho,beta,the_bc_tower)
 
@@ -102,7 +101,7 @@ contains
 
     call mkumac(mla,umac,phi,beta,fine_flx,dx,the_bc_tower,bc_comp)
 
-    call divumac(nlevs,umac,mac_rhs,rh,dx,mla%mba%rr,.false.)
+    call divumac(nlevs,umac,rh,dx,mla%mba%rr,.false.)
 
     if (nlevs .gt. 1) then
        do n=2,nlevs
@@ -134,14 +133,13 @@ contains
 
   contains
 
-    subroutine divumac(nlevs,umac,mac_rhs,rh,dx,ref_ratio,before)
+    subroutine divumac(nlevs,umac,rh,dx,ref_ratio,before)
 
       use ml_cc_restriction_module, only: ml_cc_restriction
       use probin_module, only: verbose
 
       integer        , intent(in   ) :: nlevs
       type(multifab) , intent(in   ) :: umac(:,:)
-      type(multifab ), intent(in   ) :: mac_rhs(:)
       type(multifab) , intent(inout) :: rh(:)
       real(kind=dp_t), intent(in   ) :: dx(:,:)
       integer        , intent(in   ) :: ref_ratio(:,:)
@@ -190,15 +188,6 @@ contains
       do n = 1, nlevs
          call multifab_mult_mult_s(rh(n),-ONE)
       end do
-
-      do n = 1, nlevs
-         call multifab_plus_plus(rh(n),mac_rhs(n),0)
-      end do
-
-!     do n = 1, nlevs
-!        call multifab_sub_sub(rh(n),mac_rhs(n))
-!        call multifab_mult_mult_s(rh(n),-ONE)
-!     end do
 
       rhmax = norm_inf(rh(nlevs))
       do n = nlevs,2,-1

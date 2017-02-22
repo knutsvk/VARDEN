@@ -14,14 +14,14 @@ module velocity_advance_module
 
 contains
 
-  subroutine velocity_advance(mla,uold,unew,sold,lapu,rhohalf,umac,gp, &
-                              ext_vel_force,dx,dt,the_bc_tower)
+  subroutine velocity_advance(mla, uold, unew, sold, lapu, rhohalf, umac, gp, &
+                              ext_vel_force, visc, dx, dt, the_bc_tower)
 
     use viscous_module, only : visc_solve
     use mkflux_module , only : mkflux
     use mkforce_module, only : mkvelforce
     use update_module , only : update
-    use probin_module , only : verbose, visc_coef, diffusion_type
+    use probin_module , only : verbose, diffusion_type
 
     type(ml_layout), intent(in   ) :: mla
     type(multifab) , intent(in   ) :: uold(:)
@@ -32,6 +32,7 @@ contains
     type(multifab) , intent(in   ) :: rhohalf(:)
     type(multifab) , intent(in   ) :: gp(:)
     type(multifab) , intent(in   ) :: ext_vel_force(:)
+    type(multifab) , intent(in   ) :: visc(:)
     real(kind=dp_t), intent(in   ) :: dx(:,:),dt
     type(bc_tower) , intent(in   ) :: the_bc_tower
 
@@ -66,7 +67,7 @@ contains
     !********************************************************
 
     visc_fac = ONE
-    call mkvelforce(mla,vel_force,ext_vel_force,sold,gp,lapu,visc_fac,the_bc_tower)
+    call mkvelforce(mla, vel_force, ext_vel_force, sold, gp, lapu, visc, visc_fac, the_bc_tower)
 
     !********************************************************
     ! Create the edge state velocities
@@ -82,7 +83,7 @@ contains
     ! The lapu term will be added to the rhs in visc_solve
     ! for Crank-Nicolson
     visc_fac = ZERO
-    call mkvelforce(mla,vel_force,ext_vel_force,rhohalf,gp,lapu,visc_fac,the_bc_tower)
+    call mkvelforce(mla, vel_force, ext_vel_force, rhohalf, gp, lapu, visc, visc_fac, the_bc_tower)
 
     !********************************************************
     ! Update the velocity with convective differencing

@@ -116,7 +116,7 @@ contains
     va_time_start = parallel_wtime()
     call build(bpt_v, "Velocity_update")
     call velocity_advance(mla, uold, unew, sold, lapu, rhohalf, umac, gp,  &
-                          ext_vel_force, dx, dt, the_bc_tower)
+                          ext_vel_force, visc, dx, dt, the_bc_tower)
     call destroy(bpt_v)
     call parallel_barrier()
     va_time = parallel_wtime() - va_time_start

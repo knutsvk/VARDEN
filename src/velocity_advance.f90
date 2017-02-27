@@ -42,7 +42,7 @@ contains
     type(multifab)  :: uedge(mla%nlevel,mla%dim)
     integer         :: i,n,dm,comp,nlevs
     logical         :: is_vel,is_conservative(get_dim(uold(1)))
-    real(kind=dp_t) :: visc_fac,visc_mu
+    real(kind=dp_t) :: visc_fac, visc_dt
     real(kind=dp_t) :: umin,umax
 
     nlevs = mla%nlevel
@@ -89,8 +89,8 @@ contains
     ! Update the velocity with convective differencing
     !********************************************************
 
-    call update(mla,uold,umac,uedge,uflux,vel_force,unew,dx,dt,is_vel, &
-                is_conservative,the_bc_tower%bc_tower_array)
+    call update(mla, uold, umac, uedge, uflux, vel_force, unew, dx, dt, is_vel,  is_conservative, &
+                the_bc_tower%bc_tower_array)
 
     do n = 1, nlevs
        call multifab_destroy(vel_force(n))
@@ -100,22 +100,20 @@ contains
        end do
     enddo
 
-    if (visc_coef > ZERO) then
-       ! Crank-Nicolson
-       if (diffusion_type .eq. 1) then
-          visc_mu = HALF*dt*visc_coef
-          
-       ! backward Euler
-       else if (diffusion_type .eq. 2) then
-          visc_mu = dt*visc_coef
-          
-       else
-          call bl_error('BAD DIFFUSION TYPE ')
-       end if
+    ! Crank-Nicolson
+    if (diffusion_type .eq. 1) then
+       visc_dt = HALF*dt
        
-       if (parallel_IOProcessor()) write(6,*) 'Doing the viscous solve ...'
-       call visc_solve(mla,unew,lapu,rhohalf,dx,visc_mu,the_bc_tower)
+    ! backward Euler
+    else if (diffusion_type .eq. 2) then
+       visc_dt = dt
+       
+    else
+       call bl_error('BAD DIFFUSION TYPE ')
     end if
+    
+    if (parallel_IOProcessor()) write(6,*) 'Doing the viscous solve ...'
+    call visc_solve(mla, unew, lapu, rhohalf, visc, dx, visc_dt, the_bc_tower)
 
     if (verbose .ge. 1) then
        do n = 1, nlevs

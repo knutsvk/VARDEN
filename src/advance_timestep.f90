@@ -67,7 +67,7 @@ contains
        !    the RHS includes a term that looks like grad(divu)
        call multifab_build(mac_rhs(n), mla%la(n),     1, 1)
        call multifab_build(   lapu(n), mla%la(n),    dm, 0)
-       call multifab_build(rhohalf(n), mla%la(n),    dm, 1)
+       call multifab_build(rhohalf(n), mla%la(n),     1, 1)
 
        call setval(mac_rhs(n),0.d0,all=.true.)
        call setval(rhohalf(n),0.d0,all=.true.)

@@ -32,7 +32,7 @@ contains
     type(multifab) , intent(in   ) :: rhohalf(:)
     type(multifab) , intent(in   ) :: gp(:)
     type(multifab) , intent(in   ) :: ext_vel_force(:)
-    type(multifab) , intent(in   ) :: visc(:)
+    type(multifab) , intent(inout) :: visc(:)
     real(kind=dp_t), intent(in   ) :: dx(:,:),dt
     type(bc_tower) , intent(in   ) :: the_bc_tower
 

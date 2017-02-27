@@ -37,7 +37,7 @@ contains
     real(kind=dp_t), pointer :: ep(:,:,:,:)
     real(kind=dp_t), pointer :: sp(:,:,:,:)
     real(kind=dp_t), pointer :: gpp(:,:,:,:)
-    real(kind=dp_t), pointer :: vp(:,:,:)
+    real(kind=dp_t), pointer :: vp(:,:,:,:)
 
     type(bl_prof_timer), save :: bpt
     call build(bpt,"mkvelforce")
@@ -66,11 +66,11 @@ contains
           select case (dm)
           case (2)
              call mkvelforce_2d(fp(:,:,1,:), ep(:,:,1,:), gpp(:,:,1,:), &
-                                sp(:,:,1,:), lp(:,:,1,:), vp(:,:,1), &
+                                sp(:,:,1,:), lp(:,:,1,:), vp(:,:,1,:), &
                                 ng_f, ng_e, ng_g, ng_s, ng_l, ng_v, visc_fac, lo, hi)
           case (3)
              call mkvelforce_3d(fp(:,:,:,:), ep(:,:,:,:), gpp(:,:,:,:), &
-                                sp(:,:,:,:), lp(:,:,:,:), vp(:,:,:), &
+                                sp(:,:,:,:), lp(:,:,:,:), vp(:,:,:,:), &
                                 ng_f, ng_e, ng_g, ng_s, ng_l, ng_v, visc_fac, lo, hi)
           end select
        end do
@@ -94,7 +94,7 @@ contains
     real(kind=dp_t), intent(in   ) ::            gp(lo(1)-ng_g:,lo(2)-ng_g:,:)
     real(kind=dp_t), intent(in   ) ::             s(lo(1)-ng_s:,lo(2)-ng_s:,:)
     real(kind=dp_t), intent(in   ) ::          lapu(lo(1)-ng_l:,lo(2)-ng_l:,:)
-    real(kind=dp_t), intent(in   ) ::          visc(lo(1)-ng_l:,lo(2)-ng_l:)
+    real(kind=dp_t), intent(in   ) ::          visc(lo(1)-ng_l:,lo(2)-ng_l:,:)
     real(kind=dp_t), intent(in   ) :: visc_fac
 
     real(kind=dp_t) :: lapu_local(2)
@@ -116,29 +116,29 @@ contains
 
        do j = lo(2), hi(2)
        do i = lo(1), hi(1)
-          lapu_local(1:2) = visc(i,j) * visc_fac * lapu(i,j,1:2)
+          lapu_local(1:2) = visc(i,j,1) * visc_fac * lapu(i,j,1:2)
           vel_force(i,j,1:2) = vel_force(i,j,1:2) + (lapu_local(1:2) - gp(i,j,1:2)) / s(i,j,1)
        end do
        end do
 
        ! we use 0th order extrapolation for laplacian term in ghost cells
        do j = lo(2), hi(2)
-          lapu_local(1:2) = visc(lo(1),j) * visc_fac * lapu(lo(1),j,1:2)
+          lapu_local(1:2) = visc(lo(1),j,1) * visc_fac * lapu(lo(1),j,1:2)
           vel_force(lo(1)-1,j,1:2) = ext_vel_force(lo(1)-1,j,1:2) &
                + (lapu_local(1:2) - gp(lo(1)-1,j,1:2)) / s(lo(1)-1,j,1)
        enddo
        do j = lo(2), hi(2)
-          lapu_local(1:2) = visc(hi(1),j) * visc_fac * lapu(hi(1),j,1:2)
+          lapu_local(1:2) = visc(hi(1),j,1) * visc_fac * lapu(hi(1),j,1:2)
           vel_force(hi(1)+1,j,1:2) = ext_vel_force(hi(1)+1,j,1:2) &
                + (lapu_local(1:2) - gp(hi(1)+1,j,1:2)) / s(hi(1)+1,j,1)
        enddo
        do i = lo(1), hi(1)
-          lapu_local(1:2) = visc(i,lo(2)) * visc_fac * lapu(i,lo(2),1:2)
+          lapu_local(1:2) = visc(i,lo(2),1) * visc_fac * lapu(i,lo(2),1:2)
           vel_force(i,lo(2)-1,1:2) = ext_vel_force(i,lo(2)-1,1:2) &
                + (lapu_local(1:2) - gp(i,lo(2)-1,1:2)) / s(i,lo(2)-1,1)
        enddo
        do i = lo(1), hi(1)
-          lapu_local(1:2) = visc(i,hi(2)) * visc_fac * lapu(i,hi(2),1:2)
+          lapu_local(1:2) = visc(i,hi(2),1) * visc_fac * lapu(i,hi(2),1:2)
           vel_force(i,hi(2)+1,1:2) = ext_vel_force(i,hi(2)+1,1:2) &
                + (lapu_local(1:2) - gp(i,hi(2)+1,1:2)) / s(i,hi(2)+1,1)
        enddo
@@ -157,7 +157,7 @@ contains
     real(kind=dp_t), intent(in   ) ::            gp(lo(1)-ng_g:,lo(2)-ng_g:,lo(3)-ng_g:,:)
     real(kind=dp_t), intent(in   ) ::             s(lo(1)-ng_s:,lo(2)-ng_s:,lo(3)-ng_s:,:)
     real(kind=dp_t), intent(in   ) ::          lapu(lo(1)-ng_l:,lo(2)-ng_l:,lo(3)-ng_l:,:)
-    real(kind=dp_t), intent(in   ) ::          visc(lo(1)-ng_l:,lo(2)-ng_l:,lo(3)-ng_l:)
+    real(kind=dp_t), intent(in   ) ::          visc(lo(1)-ng_l:,lo(2)-ng_l:,lo(3)-ng_l:,:)
     real(kind=dp_t), intent(in   ) :: visc_fac
 
     real(kind=dp_t) :: lapu_local(3)
@@ -183,7 +183,7 @@ contains
        do k = lo(3), hi(3)
        do j = lo(2), hi(2)
        do i = lo(1), hi(1)
-          lapu_local(1:3) = visc(i,j,k) * visc_fac * lapu(i,j,k,1:3)
+          lapu_local(1:3) = visc(i,j,k,1) * visc_fac * lapu(i,j,k,1:3)
           vel_force(i,j,k,1:3) = vel_force(i,j,k,1:3) + &
                (lapu_local(1:3) - gp(i,j,k,1:3)) / s(i,j,k,1)
        end do
@@ -193,7 +193,7 @@ contains
        ! we use 0th order extrapolation for laplacian term in ghost cells
        do k=lo(3),hi(3)
           do j=lo(2),hi(2)
-             lapu_local(1:3) = visc(lo(1),j,k) * visc_fac * lapu(lo(1),j,k,1:3)
+             lapu_local(1:3) = visc(lo(1),j,k,1) * visc_fac * lapu(lo(1),j,k,1:3)
              vel_force(lo(1)-1,j,k,1:3) = ext_vel_force(lo(1)-1,j,k,1:3) + &
                   (lapu_local(1:3) - gp(lo(1)-1,j,k,1:3)) / s(lo(1)-1,j,k,1)
           enddo
@@ -201,7 +201,7 @@ contains
 
        do k=lo(3),hi(3)
           do j=lo(2),hi(2)
-             lapu_local(1:3) = visc(hi(1),j,k) * visc_fac * lapu(hi(1),j,k,1:3)
+             lapu_local(1:3) = visc(hi(1),j,k,1) * visc_fac * lapu(hi(1),j,k,1:3)
              vel_force(hi(1)+1,j,k,1:3) = ext_vel_force(hi(1)+1,j,k,1:3) + &
                   (lapu_local(1:3) - gp(hi(1)+1,j,k,1:3)) / s(hi(1)+1,j,k,1)
           enddo
@@ -209,7 +209,7 @@ contains
 
        do k=lo(3),hi(3)
           do i=lo(1),hi(1)
-             lapu_local(1:3) = visc(i,lo(2),k) * visc_fac * lapu(i,lo(2),k,1:3)
+             lapu_local(1:3) = visc(i,lo(2),k,1) * visc_fac * lapu(i,lo(2),k,1:3)
              vel_force(i,lo(2)-1,k,1:3) = ext_vel_force(i,lo(2)-1,k,1:3) + &
                   (lapu_local(1:3) - gp(i,lo(2)-1,k,1:3)) / s(i,lo(2)-1,k,1)
           enddo
@@ -217,7 +217,7 @@ contains
 
        do k=lo(3),hi(3)
           do i=lo(1),hi(1)
-             lapu_local(1:3) = visc(i,hi(2),k) * visc_fac * lapu(i,hi(2),k,1:3)
+             lapu_local(1:3) = visc(i,hi(2),k,1) * visc_fac * lapu(i,hi(2),k,1:3)
              vel_force(i,hi(2)+1,k,1:3) = ext_vel_force(i,hi(2)+1,k,1:3) + &
                   (lapu_local(1:3) - gp(i,hi(2)+1,k,1:3)) / s(i,hi(2)+1,k,1)
           enddo
@@ -225,7 +225,7 @@ contains
 
        do j=lo(2),hi(2)
           do i=lo(1),hi(1)
-             lapu_local(1:3) = visc(i,j,lo(3)) * visc_fac * lapu(i,j,lo(3),1:3)
+             lapu_local(1:3) = visc(i,j,lo(3),1) * visc_fac * lapu(i,j,lo(3),1:3)
              vel_force(i,j,lo(3)-1,1:3) = ext_vel_force(i,j,lo(3)-1,1:3) + &
                   (lapu_local(1:3) - gp(i,j,lo(3)-1,1:3)) / s(i,j,lo(3)-1,1)
           enddo
@@ -233,7 +233,7 @@ contains
 
        do j=lo(2),hi(2)
           do i=lo(1),hi(1)
-             lapu_local(1:3) = visc(i,j,hi(3)) * visc_fac * lapu(i,j,hi(3),1:3)
+             lapu_local(1:3) = visc(i,j,hi(3),1) * visc_fac * lapu(i,j,hi(3),1:3)
              vel_force(i,j,hi(3)+1,1:3) = ext_vel_force(i,j,hi(3)+1,1:3) + &
                   (lapu_local(1:3) - gp(i,j,hi(3)+1,1:3)) / s(i,j,hi(3)+1,1)
           enddo

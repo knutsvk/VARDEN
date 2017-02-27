@@ -25,7 +25,7 @@ contains
     type(multifab ), intent(inout) :: unew(:)
     type(multifab ), intent(in   ) :: lapu(:)
     type(multifab ), intent(in   ) :: rho(:)
-    type(multifab ), intent(in   ) :: visc(:)
+    type(multifab ), intent(inout) :: visc(:)
     real(dp_t)     , intent(in   ) :: dx(:,:),dt
     type(bc_tower ), intent(in   ) :: the_bc_tower
 
@@ -255,6 +255,9 @@ contains
             do j = 1, ny
                do i = 1, nx
                   rh(i,j,k) = rh(i,j,k) + dt * visc(i,j,k) * lapu(i,j,k) 
+               end do
+            end do 
+         end do 
       end if
 
     end subroutine mkrhs_3d

@@ -74,7 +74,7 @@ subroutine varden()
   ! Set up plot_names for writing plot files.
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  allocate(plot_names(2*dm+nscal+2))
+  allocate(plot_names(2*dm+nscal+3))
 
   plot_names(1) = "x_vel"
   plot_names(2) = "y_vel"
@@ -83,9 +83,10 @@ subroutine varden()
   if (nscal > 1) plot_names(dm+2) = "tracer"
   plot_names(dm+nscal+1) = "magvel"
   plot_names(dm+nscal+2) = "vort"
-  plot_names(dm+nscal+3) = "gpx"
-  plot_names(dm+nscal+4) = "gpy"
-  if (dm > 2) plot_names(dm+nscal+5) = "gpz"
+  plot_names(dm+nscal+3) = "strainrate"
+  plot_names(dm+nscal+4) = "gpx"
+  plot_names(dm+nscal+5) = "gpy"
+  if (dm > 2) plot_names(dm+nscal+6) = "gpz"
 
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -237,25 +238,8 @@ subroutine varden()
 
      do istep = init_step, max_step
 
-!       if ( verbose > 0 ) then
-!          if ( parallel_IOProcessor() ) then
-!             print *, 'MEMORY STATS AT START OF TIMESTEP ', istep
-!             print*, ' '
-!          end if
-!          call print(multifab_mem_stats(),    "    multifab")
-!          call print(fab_mem_stats(),         "         fab")
-!          call print(boxarray_mem_stats(),    "    boxarray")
-!          call print(layout_mem_stats(),      "      layout")
-!          call print(boxassoc_mem_stats(),    "    boxassoc")
-!          call print(fgassoc_mem_stats(),     "     fgassoc")
-!          call print(syncassoc_mem_stats(),   "   syncassoc")
-!          call print(copyassoc_mem_stats(),   "   copyassoc")
-!          call print(fluxassoc_mem_stats(),   "   fluxassoc")
-!          if ( parallel_IOProcessor() ) print*, ''
-!       end if
-
         if (max_levs > 1 .and. regrid_int > 0 .and. &
-            (mod(istep-1,regrid_int) .eq. 0) ) then
+            (mod(istep-1,regrid_int) .eq. 0)) then
 
            ! Delete everything defined on the old mla.
            call delete_temps()
@@ -328,24 +312,7 @@ subroutine varden()
 
         time = time + dt
 
-!       if ( verbose > 0 ) then
-!          if ( parallel_IOProcessor() ) then
-!             print *, 'MEMORY STATS AT END OF TIMESTEP ', istep
-!             print*, ' '
-!          end if
-!          call print(multifab_mem_stats(),    "    multifab")
-!          call print(fab_mem_stats(),         "         fab")
-!          call print(boxarray_mem_stats(),    "    boxarray")
-!          call print(layout_mem_stats(),      "      layout")
-!          call print(boxassoc_mem_stats(),    "    boxassoc")
-!          call print(fgassoc_mem_stats(),     "     fgassoc")
-!          call print(syncassoc_mem_stats(),   "   syncassoc")
-!          call print(copyassoc_mem_stats(),   "   copyassoc")
-!          call print(fluxassoc_mem_stats(),   "   fluxassoc")
-!          if ( parallel_IOProcessor() ) print*, ''
-!        end if
-
-         if ( parallel_IOProcessor() ) then
+         if (parallel_IOProcessor()) then
             write(6,1000) istep,time,dt
          end if
 
@@ -499,8 +466,8 @@ contains
 
     integer, intent(in   )  :: istep_to_write
 
-    integer                 :: n,n_plot_comps
-    integer                 :: mvel_comp,vort_comp,gpx_comp
+    integer                 :: n, n_plot_comps
+    integer                 :: mvel_comp, vort_comp, strainrate_comp, gpx_comp
     logical                 :: coarsen_plot_data
  
     ! These are only used if you want to coarsen your plotdata before writing
@@ -510,36 +477,40 @@ contains
     type(layout)                :: la_crse
     type(multifab), allocatable :: mf_crse(:)
     real(dp_t),     allocatable :: dx_crse(:)
-    integer   ,     allocatable :: ref_ratio(:)
+    integer,        allocatable :: ref_ratio(:)
     integer                     :: rr_for_write(nlevs-1)
     integer                     :: coarsening_factor
 
     allocate(ref_ratio(dm))
     allocate(dx_crse(dm))
     allocate(mf_crse(nlevs))
-    !   End crse
+    ! End crse
   
     coarsen_plot_data = .false.
     coarsening_factor = 2
 
     allocate(plotdata(nlevs))
 
-    n_plot_comps = 2*dm + nscal + 2
+    n_plot_comps = 2 * dm + nscal + 3
 
-    do n = 1,nlevs
+    do n = 1, nlevs
        call multifab_build(plotdata(n), mla%la(n), n_plot_comps, 0)
-       call multifab_copy_c(plotdata(n),1           ,uold(n),1,dm)
-       call multifab_copy_c(plotdata(n),1+dm        ,sold(n),1,nscal)
+       call multifab_copy_c(plotdata(n),    1, uold(n), 1, dm)
+       call multifab_copy_c(plotdata(n), 1+dm, sold(n), 1, nscal)
 
-       mvel_comp = 1+dm+nscal
-       call make_magvel(plotdata(n),mvel_comp,uold(n))
+       mvel_comp = 1 + dm + nscal
+       call make_magvel(plotdata(n), mvel_comp, uold(n))
 
-       vort_comp = mvel_comp+1
-       call make_vorticity(plotdata(n),vort_comp,uold(n),dx(n,:), &
+       vort_comp = mvel_comp + 1
+       call make_vorticity(plotdata(n), vort_comp, uold(n), dx(n,:), &
                            the_bc_tower%bc_tower_array(n))
 
-       gpx_comp = vort_comp+1
-       call multifab_copy_c(plotdata(n),gpx_comp,gp(n),1,dm)
+       strainrate_comp = vort_comp + 1
+       call make_strainrate(plotdata(n), strainrate_comp, uold(n), dx(n,:), &
+                        the_bc_tower%bc_tower_array(n))
+
+       gpx_comp = strainrate_comp + 1
+       call multifab_copy_c(plotdata(n), gpx_comp, gp(n), 1, dm)
     end do
 
     write(unit=plot_index,fmt='(i5.5)') istep_to_write

@@ -9,7 +9,7 @@ module vort_module
 
   private
 
-  public :: make_vorticity, make_magvel
+  public :: make_vorticity, make_magvel, make_strainrate
 
 contains
 
@@ -91,6 +91,51 @@ contains
     call destroy(bpt)
 
   end subroutine make_magvel
+
+  subroutine make_strainrate(dotgam, comp, u, dx, bc)
+
+    integer        , intent(in   ) :: comp
+    type(multifab) , intent(in   ) :: dotgam
+    type(multifab) , intent(inout) :: u
+    real(kind=dp_t), intent(in   ) :: dx(:)
+    type(bc_level) , intent(in   ) :: bc
+
+    real(kind=dp_t), pointer:: up(:,:,:,:)
+    real(kind=dp_t), pointer:: dgp(:,:,:,:)
+    integer :: lo(get_dim(u)), hi(get_dim(u)), ng, dm, i
+
+    type(bl_prof_timer), save :: bpt
+    
+    call build(bpt,"make_stress")
+
+    ng = nghost(u)
+    dm = get_dim(u)
+
+    ! Fill the ghost cells from other grids at the same level
+    call multifab_fill_boundary(u)
+
+    ! Fill the ghost cells at the physical boundaries
+    call multifab_physbc(u, 1, 1, dm, bc)
+
+    do i = 1, nfabs(u)
+       up => dataptr(u, i)
+       dgp => dataptr(dotgam, i)
+       lo =  lwb(get_box(u, i))
+       hi =  upb(get_box(u, i))
+       select case (dm)
+       case (2)
+          call make_strainrate_2d(dgp(:,:,1,comp), up(:,:,1,:), lo, hi, ng, dx, &
+                             bc%phys_bc_level_array(i,:,:))
+       ! TODO:
+       !case (3)
+       !   call make_strainrate_3d(dgp(:,:,:,comp), up(:,:,:,:), lo, hi, ng, dx, &
+       !                      bc%phys_bc_level_array(i,:,:))
+       end select
+    end do
+
+    call destroy(bpt)
+
+  end subroutine make_strainrate
 
   subroutine makevort_2d(vort, u, lo, hi, ng, dx, bc)
 
@@ -716,14 +761,90 @@ contains
     integer :: i, j, k
 
     do k = lo(3), hi(3)
-    do j = lo(2), hi(2)
-    do i = lo(1), hi(1)
-       magvel(i,j,k) = sqrt(u(i,j,k,1)**2 + u(i,j,k,2)**2 + u(i,j,k,3)**2)
-    enddo
-    enddo
+       do j = lo(2), hi(2)
+          do i = lo(1), hi(1)
+             magvel(i,j,k) = sqrt(u(i,j,k,1)**2 + u(i,j,k,2)**2 + u(i,j,k,3)**2)
+          enddo
+       enddo
     enddo
 
   end subroutine makemagvel_3d
+
+  subroutine make_strainrate_2d(dotgam, u, lo, hi, ng, dx, bc)
+    use bc_module
+    use bl_constants_module
+
+    integer, intent(in) :: lo(:), hi(:), ng
+    real (kind = dp_t), intent(  out) :: dotgam(lo(1):,lo(2):)  
+    real (kind = dp_t), intent(in   ) :: u(lo(1)-ng:,lo(2)-ng:,:)  
+    real (kind = dp_t), intent(in   ) :: dx(:)
+    integer           , intent(in   ) :: bc(:,:)
+
+    !   Local variables
+    integer :: i, j
+    real (kind = dp_t) :: ux, uy, vx, vy
+
+    do j = lo(2), hi(2)
+       do i = lo(1), hi(1)
+          ux = (u(i+1,j,1) - u(i-1,j,1)) / (TWO * dx(1)) 
+          uy = (u(i,j+1,1) - u(i,j-1,1)) / (TWO * dx(2))
+          vx = (u(i+1,j,2) - u(i-1,j,2)) / (TWO * dx(1)) 
+          vy = (u(i,j+1,2) - u(i,j-1,2)) / (TWO * dx(2))
+          dotgam(i,j) = sqrt(TWO*(ux**2 + vy**2) + (uy + vx)**2)
+       enddo
+    enddo
+
+    if (bc(1,1) .eq. INLET .or. bc(1,1) .eq. SLIP_WALL .or. &
+         bc(1,1) .eq. NO_SLIP_WALL) then
+       i = lo(1)
+       do j = lo(2), hi(2)
+          ux = -(THREE * u(i,j,1) - FOUR * u(i+1,j,1) + u(i+2,j,1)) / (TWO * dx(1))
+          uy = (u(i,j+1,1) - u(i,j-1,1)) / (TWO * dx(2))
+          vx = -(THREE * u(i,j,2) - FOUR * u(i+1,j,2) + u(i+2,j,2)) / (TWO * dx(1))
+          vy = (u(i,j+1,2) - u(i,j-1,2)) / (TWO * dx(2))
+          dotgam(i,j) = sqrt(TWO*(ux**2 + vy**2) + (uy + vx)**2)
+       end do
+    end if
+
+    if (bc(1,2) .eq. INLET .or. bc(1,2) .eq. SLIP_WALL .or. &
+         bc(1,2) .eq. NO_SLIP_WALL) then
+       i = hi(1)
+       do j = lo(2), hi(2)
+          ux = (THREE * u(i,j,1) - FOUR * u(i-1,j,1) + u(i-2,j,1)) / (TWO * dx(1))
+          uy = (u(i,j+1,1) - u(i,j-1,1)) / (TWO * dx(2))
+          vx = (THREE * u(i,j,2) - FOUR * u(i-1,j,2) + u(i-2,j,2)) / (TWO * dx(1))
+          vy = (u(i,j+1,2) - u(i,j-1,2)) / (TWO * dx(2))
+          dotgam(i,j) = sqrt(TWO*(ux**2 + vy**2) + (uy + vx)**2)
+       end do
+    end if
+
+    if (bc(2,1) .eq. INLET .or. bc(2,1) .eq. SLIP_WALL .or. &
+         bc(2,1) .eq. NO_SLIP_WALL) then
+       j = lo(2)
+       do i = lo(1), hi(1)
+          ux = (u(i+1,j,1) - u(i-1,j,1)) / (TWO * dx(1)) 
+          uy = -(THREE * u(i,j,1) - FOUR * u(i,j+1,1) + u(i,j+2,1)) / (TWO * dx(2))
+          vx = (u(i+1,j,2) - u(i-1,j,2)) / (TWO * dx(1)) 
+          vy = -(THREE * u(i,j,2) - FOUR * u(i,j+1,2) + u(i,j+2,2)) / (TWO * dx(2))
+          dotgam(i,j) = sqrt(TWO*(ux**2 + vy**2) + (uy + vx)**2)
+       end do
+    end if
+
+    if (bc(2,2) .eq. INLET .or. bc(2,2) .eq. SLIP_WALL .or. &
+         bc(2,2) .eq. NO_SLIP_WALL) then
+       j = hi(2)
+       do i = lo(1), hi(1)
+          ux = (u(i+1,j,1) - u(i-1,j,1)) / (TWO * dx(1)) 
+          uy = (THREE * u(i,j,1) - FOUR * u(i,j-1,1) + u(i,j-2,1)) / (TWO * dx(2))
+          vx = (u(i+1,j,2) - u(i-1,j,2)) / (TWO * dx(1)) 
+          vy = (THREE * u(i,j,2) - FOUR * u(i,j-1,2) + u(i,j-2,2)) / (TWO * dx(2))
+          dotgam(i,j) = sqrt(TWO*(ux**2 + vy**2) + (uy + vx)**2)
+       end do
+    end if
+
+  end subroutine make_strainrate_2d
+
+  ! TODO: subroutine make_strainrate_3d
 
 
 end module vort_module

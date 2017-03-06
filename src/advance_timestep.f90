@@ -20,11 +20,12 @@ module advance_module
                             verbose, mg_verbose, cg_verbose
   use proj_parameters
   use bl_prof_module
+  use strainrate_module
 
 contains
 
-  subroutine advance_timestep(istep,mla,sold,uold,snew,unew,gp,p,ext_vel_force,ext_scal_force,&
-                              the_bc_tower,dt,time,dx,press_comp,proj_type)
+  subroutine advance_timestep(istep, mla, sold, uold, snew, unew, gp, p, ext_vel_force, &
+                              ext_scal_force, the_bc_tower, dt, time, dx, press_comp, proj_type)
 
     implicit none
 
@@ -47,6 +48,7 @@ contains
     type(multifab) :: umac(mla%nlevel, mla%dim)
     type(multifab) :: rhohalf(mla%nlevel)
     type(multifab) :: visc(mla%nlevel)
+    type(multifab) :: dotgam(mla%nlevel)
 
     real(kind=dp_t) ::  sa_time,  sa_time_start,  sa_time_max
     real(kind=dp_t) ::  va_time,  va_time_start,  va_time_max
@@ -66,9 +68,11 @@ contains
        call multifab_build(   lapu(n), mla%la(n),    dm, 0)
        call multifab_build(rhohalf(n), mla%la(n),     1, 1)
        call multifab_build(   visc(n), mla%la(n),     1, 1)
+       call multifab_build( dotgam(n), mla%la(n),     1, 1)
 
-       call setval(rhohalf(n), 0.d0,      all=.true.)
+       call setval(rhohalf(n), 0.d0     , all=.true.)
        call setval(   visc(n), visc_coef, all=.true.)
+       call setval( dotgam(n), 0.d0     , all=.true.)
 
        do i = 1,dm
          call multifab_build_edge( umac(n,i), mla%la(n),1,1,i)
@@ -78,6 +82,9 @@ contains
     end do
 
     if ( verbose .ge. 1 ) call print_old(uold, proj_type, time, istep)
+
+    ! compute rate-of-strain magnitude
+    call update_strainrate(mla, dotgam, uold, dx, the_bc_tower%bc_tower_array)
 
     ! compute viscosity
 
@@ -136,6 +143,7 @@ contains
        call multifab_destroy(   lapu(n))
        call multifab_destroy(rhohalf(n))
        call multifab_destroy(   visc(n))
+       call multifab_destroy( dotgam(n))
        do i = 1,dm
          call multifab_destroy(umac(n,i))
        end do

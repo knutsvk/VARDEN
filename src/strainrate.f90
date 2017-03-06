@@ -52,9 +52,11 @@ contains
           hi = upb(get_box(dotgam(n),i))
           select case (dm)
           case (2)
-             call update_strainrate_2d(dgp(:,:,1,:), up(:,:,1,:), lo, hi, ng_dg, ng_u, dx(n,:))
+             call update_strainrate_2d(dgp(:,:,1,:), up(:,:,1,:), lo, hi, ng_dg, ng_u, dx(n,:), &
+                                       the_bc_level(n)%phys_bc_level_array(i,:,:))
           case (3)
-             call update_strainrate_3d(dgp(:,:,:,:), up(:,:,:,:), lo, hi, ng_dg, ng_u, dx(n,:))
+             call update_strainrate_3d(dgp(:,:,:,:), up(:,:,:,:), lo, hi, ng_dg, ng_u, dx(n,:), &
+                                       the_bc_level(n)%phys_bc_level_array(i,:,:))
           end select
        end do
 
@@ -67,14 +69,16 @@ contains
 
   end subroutine update_strainrate
 
-  subroutine update_strainrate_2d(dotgam, u, lo, hi, ng_dg, ng_u, dx)
+  subroutine update_strainrate_2d(dotgam, u, lo, hi, ng_dg, ng_u, dx, bc)
 
     use bl_constants_module
+    use bc_module
 
     integer           , intent(in   ) :: lo(:), hi(:), ng_dg, ng_u
     real (kind = dp_t), intent(inout) :: dotgam(lo(1)-ng_dg:,lo(2)-ng_dg:,:)  
     real (kind = dp_t), intent(in   ) ::      u(lo(1)-ng_u:,lo(2)-ng_u:,:)  
     real (kind = dp_t), intent(in   ) :: dx(:)
+    integer           , intent(in   ) :: bc(:,:)
 
     integer :: i, j
     real (kind = dp_t) ux, uy, vx, vy
@@ -139,7 +143,7 @@ contains
 
   end subroutine update_strainrate_2d
 
-  subroutine update_strainrate_3d(dotgam, u, lo, hi, ng_dg, ng_u, dx)
+  subroutine update_strainrate_3d(dotgam, u, lo, hi, ng_dg, ng_u, dx, bc)
 
     use bl_constants_module
 
@@ -147,6 +151,7 @@ contains
     real (kind = dp_t), intent(inout) :: dotgam(lo(1)-ng_dg:,lo(2)-ng_dg:,lo(3)-ng_dg:,:)  
     real (kind = dp_t), intent(in   ) ::      u(lo(1)-ng_u: ,lo(2)-ng_u: ,lo(3)-ng_u:,:)  
     real (kind = dp_t), intent(in   ) :: dx(:)
+    integer           , intent(in   ) :: bc(:,:)
 
     integer :: i, j, k
     real (kind = dp_t) ux, uy, uz, vx, vy, vz, wx, wy, wz

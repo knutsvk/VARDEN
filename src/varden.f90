@@ -73,7 +73,7 @@ subroutine varden()
   ! Set up plot_names for writing plot files.
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  allocate(plot_names(2*dm+nscal+3))
+  allocate(plot_names(2*dm+nscal+4))
 
   plot_names(1) = "x_vel"
   plot_names(2) = "y_vel"
@@ -83,9 +83,10 @@ subroutine varden()
   plot_names(dm+nscal+1) = "magvel"
   plot_names(dm+nscal+2) = "vort"
   plot_names(dm+nscal+3) = "strainrate"
-  plot_names(dm+nscal+4) = "gpx"
-  plot_names(dm+nscal+5) = "gpy"
-  if (dm > 2) plot_names(dm+nscal+6) = "gpz"
+  plot_names(dm+nscal+4) = "viscosity"
+  plot_names(dm+nscal+5) = "gpx"
+  plot_names(dm+nscal+6) = "gpy"
+  if (dm > 2) plot_names(dm+nscal+7) = "gpz"
 
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -466,7 +467,7 @@ contains
     integer, intent(in   )  :: istep_to_write
 
     integer                 :: n, n_plot_comps
-    integer                 :: mvel_comp, vort_comp, strainrate_comp, gpx_comp
+    integer                 :: mvel_comp, vort_comp, strainrate_comp, viscosity_comp, gpx_comp
     logical                 :: coarsen_plot_data
  
     ! These are only used if you want to coarsen your plotdata before writing
@@ -490,7 +491,7 @@ contains
 
     allocate(plotdata(nlevs))
 
-    n_plot_comps = 2 * dm + nscal + 3
+    n_plot_comps = 2 * dm + nscal + 4
 
     do n = 1, nlevs
        call multifab_build(plotdata(n), mla%la(n), n_plot_comps, 0)
@@ -508,7 +509,11 @@ contains
        call make_strainrate(plotdata(n), strainrate_comp, uold(n), dx(n,:), &
                         the_bc_tower%bc_tower_array(n))
 
-       gpx_comp = strainrate_comp + 1
+       viscosity_comp = strainrate_comp + 1
+       call make_viscosity(plotdata(n), viscosity_comp, uold(n), dx(n,:), &
+                        the_bc_tower%bc_tower_array(n))
+
+       gpx_comp = viscosity_comp + 1
        call multifab_copy_c(plotdata(n), gpx_comp, gp(n), 1, dm)
     end do
 

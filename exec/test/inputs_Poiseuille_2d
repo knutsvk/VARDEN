@@ -15,8 +15,8 @@
  init_iter = 3
  do_initial_projection = 1
 
- max_step  = 500
- plot_int  = 100
+ max_step  = 200
+ plot_int  = 1
  chk_int   = -1
 
  stop_time = 20
@@ -25,6 +25,9 @@
 
  visc_coef = 1.0
  diff_coef = 0.0
+
+ yield_stress = 0.3
+ papa_reg = 0.1
 
  grav = 0.0d0
  dpdx = 1.0d0

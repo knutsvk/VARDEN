@@ -89,6 +89,54 @@ contains
        enddo
     enddo
 
+    if (bc(1,1) .eq. INLET .or. bc(1,1) .eq. SLIP_WALL .or. &
+         bc(1,1) .eq. NO_SLIP_WALL) then
+       i = lo(1)
+       do j = lo(2), hi(2)
+          ux = -(THREE * u(i,j,1) - FOUR * u(i+1,j,1) + u(i+2,j,1)) / (TWO * dx(1))
+          uy = (u(i,j+1,1) - u(i,j-1,1)) / (TWO * dx(2))
+          vx = -(THREE * u(i,j,2) - FOUR * u(i+1,j,2) + u(i+2,j,2)) / (TWO * dx(1))
+          vy = (u(i,j+1,2) - u(i,j-1,2)) / (TWO * dx(2))
+          dotgam(i,j,1) = sqrt(TWO*(ux**2 + vy**2) + (uy + vx)**2)
+       end do
+    end if
+
+    if (bc(1,2) .eq. INLET .or. bc(1,2) .eq. SLIP_WALL .or. &
+         bc(1,2) .eq. NO_SLIP_WALL) then
+       i = hi(1)
+       do j = lo(2), hi(2)
+          ux = (THREE * u(i,j,1) - FOUR * u(i-1,j,1) + u(i-2,j,1)) / (TWO * dx(1))
+          uy = (u(i,j+1,1) - u(i,j-1,1)) / (TWO * dx(2))
+          vx = (THREE * u(i,j,2) - FOUR * u(i-1,j,2) + u(i-2,j,2)) / (TWO * dx(1))
+          vy = (u(i,j+1,2) - u(i,j-1,2)) / (TWO * dx(2))
+          dotgam(i,j,1) = sqrt(TWO*(ux**2 + vy**2) + (uy + vx)**2)
+       end do
+    end if
+
+    if (bc(2,1) .eq. INLET .or. bc(2,1) .eq. SLIP_WALL .or. &
+         bc(2,1) .eq. NO_SLIP_WALL) then
+       j = lo(2)
+       do i = lo(1), hi(1)
+          ux = (u(i+1,j,1) - u(i-1,j,1)) / (TWO * dx(1)) 
+          uy = -(THREE * u(i,j,1) - FOUR * u(i,j+1,1) + u(i,j+2,1)) / (TWO * dx(2))
+          vx = (u(i+1,j,2) - u(i-1,j,2)) / (TWO * dx(1)) 
+          vy = -(THREE * u(i,j,2) - FOUR * u(i,j+1,2) + u(i,j+2,2)) / (TWO * dx(2))
+          dotgam(i,j,1) = sqrt(TWO*(ux**2 + vy**2) + (uy + vx)**2)
+       end do
+    end if
+
+    if (bc(2,2) .eq. INLET .or. bc(2,2) .eq. SLIP_WALL .or. &
+         bc(2,2) .eq. NO_SLIP_WALL) then
+       j = hi(2)
+       do i = lo(1), hi(1)
+          ux = (u(i+1,j,1) - u(i-1,j,1)) / (TWO * dx(1)) 
+          uy = (THREE * u(i,j,1) - FOUR * u(i,j-1,1) + u(i,j-2,1)) / (TWO * dx(2))
+          vx = (u(i+1,j,2) - u(i-1,j,2)) / (TWO * dx(1)) 
+          vy = (THREE * u(i,j,2) - FOUR * u(i,j-1,2) + u(i,j-2,2)) / (TWO * dx(2))
+          dotgam(i,j,1) = sqrt(TWO*(ux**2 + vy**2) + (uy + vx)**2)
+       end do
+    end if
+
   end subroutine update_strainrate_2d
 
   subroutine update_strainrate_3d(dotgam, u, lo, hi, ng_dg, ng_u, dx)
@@ -119,6 +167,7 @@ contains
           enddo
        enddo
     enddo
+     ! TODO: BCs for 3D
 
   end subroutine update_strainrate_3d
 

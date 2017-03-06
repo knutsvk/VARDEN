@@ -23,17 +23,15 @@ subroutine varden()
   use advance_module
   use regrid_module
 
-  use probin_module, only : dim_in, max_levs, nlevs, ng_cell, ng_grow, pmask, &
-                            init_iter, max_step, &
-                            stop_time, restart, chk_int, plot_int, regrid_int, init_shrink, &
-                            fixed_dt, nodal, ref_ratio, fixed_grids, grids_file_name, &
-                            do_initial_projection, grav, probin_init, probin_close, & 
-                            dpdx
+  use probin_module, only : dim_in, max_levs, nlevs, ng_cell, ng_grow, pmask, init_iter, max_step, & 
+                            stop_time, restart, chk_int, plot_int, regrid_int, init_shrink, & 
+                            fixed_dt, nodal, ref_ratio, fixed_grids, grids_file_name, & 
+                            do_initial_projection, grav, probin_init, probin_close, dpdx
 
   implicit none
 
   integer    :: dm
-  real(dp_t) :: time,dt,dtold,dt_lev,dt_temp
+  real(dp_t) :: time, dt, dtold, dt_lev, dt_temp
   integer    :: n,istep
   integer    :: n_chk_comps
   integer    :: last_plt_written, last_chk_written
@@ -44,16 +42,17 @@ subroutine varden()
   type(ml_layout)           :: mla
 
   ! Cell-based quantities
-  type(multifab), pointer     ::     uold(:)
-  type(multifab), pointer     ::     sold(:)
-  type(multifab), pointer     ::       gp(:)
-  type(multifab), pointer     ::        p(:)
-  type(multifab), allocatable ::     unew(:)
-  type(multifab), allocatable ::     snew(:)
-  type(multifab), allocatable ::  rhohalf(:)
-  type(multifab), allocatable :: ext_vel_force(:)
+  type(multifab), pointer     ::           uold(:)
+  type(multifab), pointer     ::           sold(:)
+  type(multifab), pointer     ::             gp(:)
+  type(multifab), pointer     ::              p(:)
+  type(multifab), allocatable ::           unew(:)
+  type(multifab), allocatable ::           snew(:)
+  type(multifab), allocatable ::        rhohalf(:)
+  type(multifab), allocatable ::  ext_vel_force(:)
   type(multifab), allocatable :: ext_scal_force(:)
-  type(multifab), allocatable :: plotdata(:)
+  type(multifab), allocatable ::         dotgam(:)
+  type(multifab), allocatable ::       plotdata(:)
 
   character(len=5)               :: plot_index, check_index
   character(len=256)             :: plot_file_name, check_file_name
@@ -95,7 +94,7 @@ subroutine varden()
 
   if (restart >= 0) then
 
-     call initialize_from_restart(mla,restart,time,dt,dx,pmask,uold,sold,gp,p,the_bc_tower)
+     call initialize_from_restart(mla, restart, time, dt, dx, pmask, uold, sold, gp, p, the_bc_tower)
 
   else if (fixed_grids /= '') then
 

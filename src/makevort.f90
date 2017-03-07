@@ -137,9 +137,9 @@ contains
 
   end subroutine make_strainrate
 
-  subroutine make_viscosity(visc, comp, u, dx, bc)
+  subroutine make_viscosity(visc, comp, u, dg_comp, dx, bc)
 
-    integer        , intent(in   ) :: comp
+    integer        , intent(in   ) :: comp, dg_comp
     type(multifab) , intent(in   ) :: visc
     type(multifab) , intent(inout) :: u
     real(kind=dp_t), intent(in   ) :: dx(:)
@@ -163,18 +163,16 @@ contains
     call multifab_physbc(u, 1, 1, dm, bc)
 
     do i = 1, nfabs(u)
-       up => dataptr(u, i)
+       up => dataptr(visc, i)
        vp => dataptr(visc, i)
        lo =  lwb(get_box(u, i))
        hi =  upb(get_box(u, i))
        select case (dm)
        case (2)
-          call make_viscosity_2d(vp(:,:,1,comp), up(:,:,1,:), lo, hi, ng, dx, &
+          call make_viscosity_2d(vp(:,:,1,comp), up(:,:,1,dg_comp), lo, hi, ng, dx, &
                              bc%phys_bc_level_array(i,:,:))
        ! TODO:
        !case (3)
-       !   call make_strainrate_3d(dgp(:,:,:,comp), up(:,:,:,:), lo, hi, ng, dx, &
-       !                      bc%phys_bc_level_array(i,:,:))
        end select
     end do
 
@@ -891,29 +889,24 @@ contains
 
   ! TODO: subroutine make_strainrate_3d
 
-  subroutine make_viscosity_2d(visc, u, lo, hi, ng, dx, bc)
+  subroutine make_viscosity_2d(visc, dg, lo, hi, ng, dx, bc)
     use bc_module
     use bl_constants_module
     use probin_module, only: visc_coef, yield_stress, papa_reg
 
     integer, intent(in) :: lo(:), hi(:), ng
     real (kind = dp_t), intent(  out) :: visc(lo(1):,lo(2):)  
-    real (kind = dp_t), intent(in   ) :: u(lo(1)-ng:,lo(2)-ng:,:)  
+    real (kind = dp_t), intent(in   ) :: dg(lo(1):,lo(2):)  
     real (kind = dp_t), intent(in   ) :: dx(:)
     integer           , intent(in   ) :: bc(:,:)
 
     !   Local variables
     integer :: i, j
-    real (kind = dp_t) :: ux, uy, vx, vy, dotgam, phi
+    real (kind = dp_t) :: phi
 
     do j = lo(2), hi(2)
        do i = lo(1), hi(1)
-          ux = (u(i+1,j,1) - u(i-1,j,1)) / (TWO * dx(1)) 
-          uy = (u(i,j+1,1) - u(i,j-1,1)) / (TWO * dx(2))
-          vx = (u(i+1,j,2) - u(i-1,j,2)) / (TWO * dx(1)) 
-          vy = (u(i,j+1,2) - u(i,j-1,2)) / (TWO * dx(2))
-          dotgam = sqrt(TWO*(ux**2 + vy**2) + (uy + vx)**2)
-          phi = dotgam / papa_reg
+          phi = dg(i,j) / papa_reg
           if (phi < 1e-9) then 
              visc(i,j) = visc_coef + yield_stress / papa_reg * &
                 (ONE - HALF * phi + SIXTH * phi**2 - FOURTH * SIXTH * phi**3)
@@ -923,86 +916,6 @@ contains
           endif
        enddo
     enddo
-
-    if (bc(1,1) .eq. INLET .or. bc(1,1) .eq. SLIP_WALL .or. &
-         bc(1,1) .eq. NO_SLIP_WALL) then
-       i = lo(1)
-       do j = lo(2), hi(2)
-          ux = -(THREE * u(i,j,1) - FOUR * u(i+1,j,1) + u(i+2,j,1)) / (TWO * dx(1))
-          uy = (u(i,j+1,1) - u(i,j-1,1)) / (TWO * dx(2))
-          vx = -(THREE * u(i,j,2) - FOUR * u(i+1,j,2) + u(i+2,j,2)) / (TWO * dx(1))
-          vy = (u(i,j+1,2) - u(i,j-1,2)) / (TWO * dx(2))
-          dotgam = sqrt(TWO*(ux**2 + vy**2) + (uy + vx)**2)
-          phi = dotgam / papa_reg
-          if (phi < 1e-9) then 
-             visc(i,j) = visc_coef + yield_stress / papa_reg * &
-                (ONE - HALF * phi + SIXTH * phi**2 - FOURTH * SIXTH * phi**3)
-          else
-             visc(i,j) = visc_coef + yield_stress / papa_reg * & 
-                (ONE - exp(-phi)) / phi
-          endif
-       end do
-    end if
-
-    if (bc(1,2) .eq. INLET .or. bc(1,2) .eq. SLIP_WALL .or. &
-         bc(1,2) .eq. NO_SLIP_WALL) then
-       i = hi(1)
-       do j = lo(2), hi(2)
-          ux = (THREE * u(i,j,1) - FOUR * u(i-1,j,1) + u(i-2,j,1)) / (TWO * dx(1))
-          uy = (u(i,j+1,1) - u(i,j-1,1)) / (TWO * dx(2))
-          vx = (THREE * u(i,j,2) - FOUR * u(i-1,j,2) + u(i-2,j,2)) / (TWO * dx(1))
-          vy = (u(i,j+1,2) - u(i,j-1,2)) / (TWO * dx(2))
-          dotgam = sqrt(TWO*(ux**2 + vy**2) + (uy + vx)**2)
-          phi = dotgam / papa_reg
-          if (phi < 1e-9) then 
-             visc(i,j) = visc_coef + yield_stress / papa_reg * &
-                (ONE - HALF * phi + SIXTH * phi**2 - FOURTH * SIXTH * phi**3)
-          else
-             visc(i,j) = visc_coef + yield_stress / papa_reg * & 
-                (ONE - exp(-phi)) / phi
-          endif
-       end do
-    end if
-
-    if (bc(2,1) .eq. INLET .or. bc(2,1) .eq. SLIP_WALL .or. &
-         bc(2,1) .eq. NO_SLIP_WALL) then
-       j = lo(2)
-       do i = lo(1), hi(1)
-          ux = (u(i+1,j,1) - u(i-1,j,1)) / (TWO * dx(1)) 
-          uy = -(THREE * u(i,j,1) - FOUR * u(i,j+1,1) + u(i,j+2,1)) / (TWO * dx(2))
-          vx = (u(i+1,j,2) - u(i-1,j,2)) / (TWO * dx(1)) 
-          vy = -(THREE * u(i,j,2) - FOUR * u(i,j+1,2) + u(i,j+2,2)) / (TWO * dx(2))
-          dotgam = sqrt(TWO*(ux**2 + vy**2) + (uy + vx)**2)
-          phi = dotgam / papa_reg
-          if (phi < 1e-9) then 
-             visc(i,j) = visc_coef + yield_stress / papa_reg * &
-                (ONE - HALF * phi + SIXTH * phi**2 - FOURTH * SIXTH * phi**3)
-          else
-             visc(i,j) = visc_coef + yield_stress / papa_reg * & 
-                (ONE - exp(-phi)) / phi
-          endif
-       end do
-    end if
-
-    if (bc(2,2) .eq. INLET .or. bc(2,2) .eq. SLIP_WALL .or. &
-         bc(2,2) .eq. NO_SLIP_WALL) then
-       j = hi(2)
-       do i = lo(1), hi(1)
-          ux = (u(i+1,j,1) - u(i-1,j,1)) / (TWO * dx(1)) 
-          uy = (THREE * u(i,j,1) - FOUR * u(i,j-1,1) + u(i,j-2,1)) / (TWO * dx(2))
-          vx = (u(i+1,j,2) - u(i-1,j,2)) / (TWO * dx(1)) 
-          vy = (THREE * u(i,j,2) - FOUR * u(i,j-1,2) + u(i,j-2,2)) / (TWO * dx(2))
-          dotgam = sqrt(TWO*(ux**2 + vy**2) + (uy + vx)**2)
-          phi = dotgam / papa_reg
-          if (phi < 1e-9) then 
-             visc(i,j) = visc_coef + yield_stress / papa_reg * &
-                (ONE - HALF * phi + SIXTH * phi**2 - FOURTH * SIXTH * phi**3)
-          else
-             visc(i,j) = visc_coef + yield_stress / papa_reg * & 
-                (ONE - exp(-phi)) / phi
-          endif
-       end do
-    end if
 
   end subroutine make_viscosity_2d
 

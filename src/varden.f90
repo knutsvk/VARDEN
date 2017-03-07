@@ -510,7 +510,7 @@ contains
                         the_bc_tower%bc_tower_array(n))
 
        viscosity_comp = strainrate_comp + 1
-       call make_viscosity(plotdata(n), viscosity_comp, uold(n), dx(n,:), &
+       call make_viscosity(plotdata(n), viscosity_comp, uold(n), strainrate_comp, dx(n,:), &
                         the_bc_tower%bc_tower_array(n))
 
        gpx_comp = viscosity_comp + 1

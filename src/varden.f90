@@ -26,7 +26,7 @@ subroutine varden()
   use probin_module, only : dim_in, max_levs, nlevs, ng_cell, ng_grow, pmask, init_iter, max_step, & 
                             stop_time, restart, chk_int, plot_int, regrid_int, init_shrink, & 
                             fixed_dt, nodal, ref_ratio, fixed_grids, grids_file_name, & 
-                            do_initial_projection, grav, probin_init, probin_close, dpdx
+                            do_initial_projection, grav, probin_init, probin_close, dpdx, visc_coef
 
   implicit none
 
@@ -51,7 +51,9 @@ subroutine varden()
   type(multifab), allocatable ::        rhohalf(:)
   type(multifab), allocatable ::  ext_vel_force(:)
   type(multifab), allocatable :: ext_scal_force(:)
-  type(multifab), allocatable ::         dotgam(:)
+  type(multifab), allocatable ::    strain_rate(:)
+  type(multifab), allocatable ::      viscosity(:)
+  type(multifab), allocatable :: nonlinear_term(:)
   type(multifab), allocatable ::       plotdata(:)
 
   character(len=5)               :: plot_index, check_index
@@ -73,7 +75,7 @@ subroutine varden()
   ! Set up plot_names for writing plot files.
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  allocate(plot_names(2*dm+nscal+4))
+  allocate(plot_names(2*dm+nscal+5))
 
   plot_names(1) = "x_vel"
   plot_names(2) = "y_vel"
@@ -84,9 +86,10 @@ subroutine varden()
   plot_names(dm+nscal+2) = "vort"
   plot_names(dm+nscal+3) = "strainrate"
   plot_names(dm+nscal+4) = "viscosity"
-  plot_names(dm+nscal+5) = "gpx"
-  plot_names(dm+nscal+6) = "gpy"
-  if (dm > 2) plot_names(dm+nscal+7) = "gpz"
+  plot_names(dm+nscal+5) = "nonlinear"
+  plot_names(dm+nscal+6) = "gpx"
+  plot_names(dm+nscal+7) = "gpy"
+  if (dm > 2) plot_names(dm+nscal+8) = "gpz"
 
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -99,11 +102,11 @@ subroutine varden()
 
   else if (fixed_grids /= '') then
 
-     call initialize_with_fixed_grids(mla,pmask,dx,uold,sold,gp,p,the_bc_tower)
+     call initialize_with_fixed_grids(mla, pmask, dx, uold, sold, gp, p, the_bc_tower)
 
   else  ! Adaptive gridding
 
-     call initialize_with_adaptive_grids(mla,pmask,dx,uold,sold,gp,p,the_bc_tower)
+     call initialize_with_adaptive_grids(mla, pmask, dx, uold, sold, gp, p, the_bc_tower)
 
   end if
 
@@ -111,8 +114,9 @@ subroutine varden()
   ! Allocate new-time state and temp variables
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  allocate(unew(nlevs),snew(nlevs))
-  allocate(ext_vel_force(nlevs),ext_scal_force(nlevs))
+  allocate(unew(nlevs), snew(nlevs))
+  allocate(ext_vel_force(nlevs), ext_scal_force(nlevs))
+  allocate(strain_rate(nlevs), viscosity(nlevs), nonlinear_term(nlevs))
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   ! Initial projection if not restart
@@ -187,13 +191,12 @@ subroutine varden()
 
      dt = 1.d20
      dtold = dt
-     do n = 1,nlevs
-        call estdt(n,uold(n),sold(n),gp(n),ext_vel_force(n),dx(n,:), &
-                   dtold,dt_lev)
-        dt = min(dt,dt_lev)
+     do n = 1, nlevs
+        call estdt(n, uold(n), sold(n), gp(n), ext_vel_force(n), dx(n,:), dtold, dt_lev)
+        dt = min(dt, dt_lev)
      end do
 
-     dt = dt*init_shrink
+     dt = dt * init_shrink
 
      if (fixed_dt > 0.d0) dt = fixed_dt
      if (stop_time >= 0.d0) then
@@ -246,11 +249,11 @@ subroutine varden()
 
            ! Keep the state on the previous grid in unew,snew
            ! Create the state on the new grid in uold,sold
-           call regrid(mla,uold,sold,gp,p,dx,the_bc_tower)
+           call regrid(mla, uold, sold, gp, p, dx, the_bc_tower)
            if (grids_file_name /= '') &
-              call write_grids(grids_file_name,mla,istep)
+              call write_grids(grids_file_name, mla, istep)
 
-           ! Create "new" unew,snew,ext_vel_force,ext_scal_force
+           ! Create "new" unew, snew, ext_vel_force, ext_scal_force, strain_rate, viscosity, nonlinear
            call make_temps(mla)
 
         end if  
@@ -279,8 +282,8 @@ subroutine varden()
            call multifab_fill_boundary(gp(n))
 
            bc = the_bc_tower%bc_tower_array(n)
-           call multifab_physbc(uold(n),1,1,   dm,   bc)
-           call multifab_physbc(sold(n),1,dm+1,nscal,bc)
+           call multifab_physbc(uold(n), 1,    1,    dm, bc)
+           call multifab_physbc(sold(n), 1, dm+1, nscal, bc)
 
         end do
 
@@ -288,9 +291,8 @@ subroutine varden()
            dtold = dt
            dt = 1.d20
            do n = 1,nlevs
-              call estdt(n,uold(n),sold(n),gp(n),ext_vel_force(n),dx(n,:), &
-                   dtold,dt_lev)
-              dt = min(dt,dt_lev)
+              call estdt(n, uold(n), sold(n), gp(n), ext_vel_force(n), dx(n,:), dtold, dt_lev)
+              dt = min(dt, dt_lev)
            end do
            if (fixed_dt > 0.d0) dt = fixed_dt
            if (stop_time >= 0.d0) then
@@ -302,8 +304,9 @@ subroutine varden()
            end if
         end if
 
-        call advance_timestep(istep,mla,sold,uold,snew,unew,gp,p,ext_vel_force,ext_scal_force,&
-                              the_bc_tower,dt,time,dx,press_comp,regular_timestep)
+        call advance_timestep(istep, mla, sold, uold, snew, unew, gp, p, ext_vel_force, &
+                              ext_scal_force, strain_rate, viscosity, nonlinear_term, the_bc_tower, &
+                              dt, time, dx, press_comp, regular_timestep)
 
         do n = 1,nlevs
            call multifab_copy_c(uold(n),1,unew(n),1,dm)
@@ -386,16 +389,22 @@ contains
     type(ml_layout),intent(in   ) :: mla_loc
 
     do n = nlevs,1,-1
-       call multifab_build(   unew(n), mla_loc%la(n),    dm, ng_cell)
-       call multifab_build(   snew(n), mla_loc%la(n), nscal, ng_cell)
-       call multifab_build(ext_vel_force(n),  mla_loc%la(n),    dm, 1)
+       call multifab_build(          unew(n), mla_loc%la(n),    dm, ng_cell)
+       call multifab_build(          snew(n), mla_loc%la(n), nscal, ng_cell)
+       call multifab_build( ext_vel_force(n), mla_loc%la(n),    dm, 1)
        call multifab_build(ext_scal_force(n), mla_loc%la(n), nscal, 1)
+       call multifab_build(   strain_rate(n), mla_loc%la(n),     1, 1)
+       call multifab_build(     viscosity(n), mla_loc%la(n),     1, ng_cell)
+       call multifab_build(nonlinear_term(n), mla_loc%la(n),    dm, 1)
 
-       call setval(   unew(n),ZERO, all=.true.)
-       call setval(   snew(n),ZERO, all=.true.)
-       call setval(ext_vel_force(n) ,dpdx, 1,dm-1,all=.true.)
-       call setval(ext_vel_force(n) ,grav,dm,   1,all=.true.)
-       call setval(ext_scal_force(n),ZERO, all=.true.)
+       call setval(          unew(n),      ZERO,           all=.true.)
+       call setval(          snew(n),      ZERO,           all=.true.)
+       call setval( ext_vel_force(n),      dpdx,  1, dm-1, all=.true.)
+       call setval( ext_vel_force(n),      grav, dm,    1, all=.true.)
+       call setval(ext_scal_force(n),      ZERO,           all=.true.)
+       call setval(   strain_rate(n),      ZERO,           all=.true.)
+       call setval(     viscosity(n), visc_coef,           all=.true.)
+       call setval(nonlinear_term(n),      ZERO,           all=.true.)
 
     end do
 
@@ -408,6 +417,9 @@ contains
        call multifab_destroy(snew(n))
        call multifab_destroy(ext_vel_force(n))
        call multifab_destroy(ext_scal_force(n))
+       call multifab_destroy(   strain_rate(n))
+       call multifab_destroy(     viscosity(n))
+       call multifab_destroy(nonlinear_term(n))
     end do
 
   end subroutine delete_temps
@@ -450,8 +462,9 @@ contains
                                          1,1,dm)
        end do
 
-       call advance_timestep(istep,mla,sold,uold,snew,unew,gp,p,ext_vel_force,ext_scal_force,&
-                             the_bc_tower,dt,time,dx,press_comp,pressure_iters)
+       call advance_timestep(istep, mla, sold, uold, snew, unew, gp, p, ext_vel_force, &
+                             ext_scal_force, strain_rate, viscosity, nonlinear_term, the_bc_tower, &
+                             dt, time, dx, press_comp, pressure_iters)
 
     end do
 
@@ -467,7 +480,8 @@ contains
     integer, intent(in   )  :: istep_to_write
 
     integer                 :: n, n_plot_comps
-    integer                 :: mvel_comp, vort_comp, strainrate_comp, viscosity_comp, gpx_comp
+    integer                 :: mvel_comp, vort_comp, gpx_comp
+    integer                 :: strainrate_comp, viscosity_comp, nonlinear_comp
     logical                 :: coarsen_plot_data
  
     ! These are only used if you want to coarsen your plotdata before writing
@@ -491,7 +505,7 @@ contains
 
     allocate(plotdata(nlevs))
 
-    n_plot_comps = 2 * dm + nscal + 4
+    n_plot_comps = 2 * dm + nscal + 5
 
     do n = 1, nlevs
        call multifab_build(plotdata(n), mla%la(n), n_plot_comps, 0)
@@ -506,14 +520,15 @@ contains
                            the_bc_tower%bc_tower_array(n))
 
        strainrate_comp = vort_comp + 1
-       call make_strainrate(plotdata(n), strainrate_comp, uold(n), dx(n,:), &
-                        the_bc_tower%bc_tower_array(n))
+       call multifab_copy_c(plotdata(n), strainrate_comp, strain_rate(n), 1, 1)
 
        viscosity_comp = strainrate_comp + 1
-       call make_viscosity(plotdata(n), viscosity_comp, uold(n), strainrate_comp, dx(n,:), &
-                        the_bc_tower%bc_tower_array(n))
+       call multifab_copy_c(plotdata(n), viscosity_comp, viscosity(n), 1, 1)
 
-       gpx_comp = viscosity_comp + 1
+       nonlinear_comp = viscosity_comp + 1
+       call multifab_copy_c(plotdata(n), nonlinear_comp, nonlinear_term(n), 1, dm)
+
+       gpx_comp = nonlinear_comp + 1
        call multifab_copy_c(plotdata(n), gpx_comp, gp(n), 1, dm)
     end do
 

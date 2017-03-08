@@ -393,9 +393,9 @@ contains
        call multifab_build(          snew(n), mla_loc%la(n), nscal, ng_cell)
        call multifab_build( ext_vel_force(n), mla_loc%la(n),    dm, 1)
        call multifab_build(ext_scal_force(n), mla_loc%la(n), nscal, 1)
-       call multifab_build(   strain_rate(n), mla_loc%la(n),     1, 1)
-       call multifab_build(     viscosity(n), mla_loc%la(n),     1, ng_cell)
-       call multifab_build(nonlinear_term(n), mla_loc%la(n),    dm, 1)
+       call multifab_build(   strain_rate(n), mla_loc%la(n),     1, 0)
+       call multifab_build(     viscosity(n), mla_loc%la(n),     1, 0)
+       call multifab_build(nonlinear_term(n), mla_loc%la(n),    dm, 0)
 
        call setval(          unew(n),      ZERO,           all=.true.)
        call setval(          snew(n),      ZERO,           all=.true.)

@@ -13,25 +13,25 @@ module strainrate_module
 
 contains
 
-   subroutine update_strainrate(mla, dotgam, u, dx, the_bc_level)
+   subroutine update_strainrate(mla, strain_rate, u, dx, the_bc_level)
 
     use bl_constants_module
     use ml_restrict_fill_module
     use probin_module, only: extrap_comp
 
     type(ml_layout)   , intent(in   ) :: mla
-    type(multifab)    , intent(inout) :: dotgam(:)
+    type(multifab)    , intent(inout) :: strain_rate(:)
     type(multifab)    , intent(in   ) :: u(:)
     real(kind = dp_t) , intent(in   ) :: dx(:,:)
     type(bc_level)    , intent(in   ) :: the_bc_level(:)
 
     ! local
-    real(kind=dp_t), pointer :: dgp(:,:,:,:)
-    real(kind=dp_t), pointer ::  up(:,:,:,:)
+    real(kind=dp_t), pointer :: sp(:,:,:,:)
+    real(kind=dp_t), pointer :: up(:,:,:,:)
 
-    integer :: lo(get_dim(dotgam(1))), hi(get_dim(dotgam(1)))
-    integer :: i, dm, nscal, n, nlevs
-    integer :: ng_dg, ng_u
+    integer :: lo(mla%dim), hi(mla%dim)
+    integer :: i, dm, n, nlevs
+    integer :: ng
     
     type(bl_prof_timer), save :: bpt
 
@@ -40,106 +40,76 @@ contains
     nlevs = mla%nlevel
     dm    = mla%dim
 
-    ng_dg = dotgam(1)%ng
-    ng_u = u(1)%ng
+    ng = u(1)%ng
 
     do n=1, nlevs
 
-       do i = 1, nfabs(dotgam(n))
-          dgp => dataptr(dotgam(n),i)
-          up  => dataptr( u(n),i)
-          lo = lwb(get_box(dotgam(n),i))
-          hi = upb(get_box(dotgam(n),i))
+       do i = 1, nfabs(strain_rate(n))
+          sp => dataptr(strain_rate(n),i)
+          up => dataptr(          u(n),i)
+          lo = lwb(get_box(strain_rate(n),i))
+          hi = upb(get_box(strain_rate(n),i))
           select case (dm)
           case (2)
-             call update_strainrate_2d(dgp(:,:,1,:), up(:,:,1,:), lo, hi, ng_dg, ng_u, dx(n,:), &
+             call update_strainrate_2d(sp(:,:,1,1), up(:,:,1,:), lo, hi, ng, dx(n,:), &
                                        the_bc_level(n)%phys_bc_level_array(i,:,:))
           case (3)
-             call update_strainrate_3d(dgp(:,:,:,:), up(:,:,:,:), lo, hi, ng_dg, ng_u, dx(n,:), &
-                                       the_bc_level(n)%phys_bc_level_array(i,:,:))
+             !call update_strainrate_3d(dgp(:,:,:,:), up(:,:,:,:), lo, hi, ng_dg, ng_u, dx(n,:), &
+             !                          the_bc_level(n)%phys_bc_level_array(i,:,:))
           end select
        end do
 
     enddo ! end loop over levels
 
     ! restrict cell-centered multifab data, fill all boundaries
-    call ml_restrict_and_fill(nlevs, dotgam, mla%mba%rr, the_bc_level, bcomp=extrap_comp)
+    call ml_restrict_and_fill(nlevs, strain_rate, mla%mba%rr, the_bc_level, bcomp=extrap_comp)
 
     call destroy(bpt)
 
   end subroutine update_strainrate
 
-  subroutine update_strainrate_2d(dotgam, u, lo, hi, ng_dg, ng_u, dx, bc)
+  subroutine update_strainrate_2d(strain_rate, u, lo, hi, ng, dx, bc)
 
     use bl_constants_module
     use bc_module
 
-    integer           , intent(in   ) :: lo(:), hi(:), ng_dg, ng_u
-    real (kind = dp_t), intent(inout) :: dotgam(lo(1)-ng_dg:,lo(2)-ng_dg:,:)  
-    real (kind = dp_t), intent(in   ) ::      u(lo(1)-ng_u:,lo(2)-ng_u:,:)  
+    integer           , intent(in   ) :: lo(:), hi(:), ng
+    real (kind = dp_t), intent(inout) :: strain_rate(lo(1)   :, lo(2)   :)  
+    real (kind = dp_t), intent(in   ) ::           u(lo(1)-ng:, lo(2)-ng:,:)  
     real (kind = dp_t), intent(in   ) :: dx(:)
     integer           , intent(in   ) :: bc(:,:)
 
     integer :: i, j
     real (kind = dp_t) ux, uy, vx, vy
 
-    do j = lo(2), hi(2)
+    do j = lo(2)+1, hi(2)-1
        do i = lo(1), hi(1)
           ux = (u(i+1,j,1) - u(i-1,j,1)) / (TWO * dx(1))
-          uy = (u(i,j+1,1) - u(i,j-1,1)) / (TWO * dx(2))
           vx = (u(i+1,j,2) - u(i-1,j,2)) / (TWO * dx(1))
+          uy = (u(i,j+1,1) - u(i,j-1,1)) / (TWO * dx(2))
           vy = (u(i,j+1,2) - u(i,j-1,2)) / (TWO * dx(2))
-          dotgam(i,j,1) = sqrt(TWO * (ux**2 + vy**2) + (uy + vx)**2)
+          strain_rate(i,j) = sqrt(TWO * (ux**2 + vy**2) + (uy + vx)**2)
        enddo
     enddo
 
-    if (bc(1,1) .eq. INLET .or. bc(1,1) .eq. SLIP_WALL .or. &
-         bc(1,1) .eq. NO_SLIP_WALL) then
-       i = lo(1)
-       do j = lo(2), hi(2)
-          ux = -(THREE * u(i,j,1) - FOUR * u(i+1,j,1) + u(i+2,j,1)) / (TWO * dx(1))
-          uy = (u(i,j+1,1) - u(i,j-1,1)) / (TWO * dx(2))
-          vx = -(THREE * u(i,j,2) - FOUR * u(i+1,j,2) + u(i+2,j,2)) / (TWO * dx(1))
-          vy = (u(i,j+1,2) - u(i,j-1,2)) / (TWO * dx(2))
-          dotgam(i,j,1) = sqrt(TWO*(ux**2 + vy**2) + (uy + vx)**2)
-       end do
-    end if
+    ! TODO: Also for boundaries in x-direction
+    j = lo(2)
+    do i = lo(1), hi(1)
+       ux = (u(i+1,j,1) - u(i-1,j,1)) / (TWO * dx(1))
+       vx = (u(i+1,j,2) - u(i-1,j,2)) / (TWO * dx(1))
+       uy = -(THREE * u(i,j,1) - FOUR * u(i,j+1,1) + u(i,j+2,1)) / (TWO * dx(2))
+       vy = -(THREE * u(i,j,2) - FOUR * u(i,j+1,2) + u(i,j+2,2)) / (TWO * dx(2))
+       strain_rate(i,j) = sqrt(TWO * (ux**2 + vy**2) + (uy + vx)**2)
+    enddo
 
-    if (bc(1,2) .eq. INLET .or. bc(1,2) .eq. SLIP_WALL .or. &
-         bc(1,2) .eq. NO_SLIP_WALL) then
-       i = hi(1)
-       do j = lo(2), hi(2)
-          ux = (THREE * u(i,j,1) - FOUR * u(i-1,j,1) + u(i-2,j,1)) / (TWO * dx(1))
-          uy = (u(i,j+1,1) - u(i,j-1,1)) / (TWO * dx(2))
-          vx = (THREE * u(i,j,2) - FOUR * u(i-1,j,2) + u(i-2,j,2)) / (TWO * dx(1))
-          vy = (u(i,j+1,2) - u(i,j-1,2)) / (TWO * dx(2))
-          dotgam(i,j,1) = sqrt(TWO*(ux**2 + vy**2) + (uy + vx)**2)
-       end do
-    end if
-
-    if (bc(2,1) .eq. INLET .or. bc(2,1) .eq. SLIP_WALL .or. &
-         bc(2,1) .eq. NO_SLIP_WALL) then
-       j = lo(2)
-       do i = lo(1), hi(1)
-          ux = (u(i+1,j,1) - u(i-1,j,1)) / (TWO * dx(1)) 
-          uy = -(THREE * u(i,j,1) - FOUR * u(i,j+1,1) + u(i,j+2,1)) / (TWO * dx(2))
-          vx = (u(i+1,j,2) - u(i-1,j,2)) / (TWO * dx(1)) 
-          vy = -(THREE * u(i,j,2) - FOUR * u(i,j+1,2) + u(i,j+2,2)) / (TWO * dx(2))
-          dotgam(i,j,1) = sqrt(TWO*(ux**2 + vy**2) + (uy + vx)**2)
-       end do
-    end if
-
-    if (bc(2,2) .eq. INLET .or. bc(2,2) .eq. SLIP_WALL .or. &
-         bc(2,2) .eq. NO_SLIP_WALL) then
-       j = hi(2)
-       do i = lo(1), hi(1)
-          ux = (u(i+1,j,1) - u(i-1,j,1)) / (TWO * dx(1)) 
-          uy = (THREE * u(i,j,1) - FOUR * u(i,j-1,1) + u(i,j-2,1)) / (TWO * dx(2))
-          vx = (u(i+1,j,2) - u(i-1,j,2)) / (TWO * dx(1)) 
-          vy = (THREE * u(i,j,2) - FOUR * u(i,j-1,2) + u(i,j-2,2)) / (TWO * dx(2))
-          dotgam(i,j,1) = sqrt(TWO*(ux**2 + vy**2) + (uy + vx)**2)
-       end do
-    end if
+    j = hi(2)
+    do i = lo(1), hi(1)
+       ux = (u(i+1,j,1) - u(i-1,j,1)) / (TWO * dx(1))
+       vx = (u(i+1,j,2) - u(i-1,j,2)) / (TWO * dx(1))
+       uy = (THREE * u(i,j,1) - FOUR * u(i,j-1,1) + u(i,j-2,1)) / (TWO * dx(2))
+       vy = (THREE * u(i,j,2) - FOUR * u(i,j-1,2) + u(i,j-2,2)) / (TWO * dx(2))
+       strain_rate(i,j) = sqrt(TWO * (ux**2 + vy**2) + (uy + vx)**2)
+    enddo
 
   end subroutine update_strainrate_2d
 

@@ -33,7 +33,7 @@ contains
 
     integer :: lo(mla%dim), hi(mla%dim)
     integer :: i, dm, n, nlevs
-    integer :: ng
+    integer :: ng_u, ng_v
     
     type(bl_prof_timer), save :: bpt
 
@@ -42,7 +42,8 @@ contains
     nlevs = mla%nlevel
     dm    = mla%dim
 
-    ng = u(1)%ng
+    ng_u = u(1)%ng
+    ng_v = viscosity(1)%ng
 
     do n=1, nlevs
 
@@ -55,7 +56,7 @@ contains
           select case (dm)
           case (2)
              call update_nonlinear_2d(np(:,:,1,:), up(:,:,1,:), vp(:,:,1,1), &
-                                      lo, hi, ng, dx(n,:))
+                                      lo, hi, ng_u, ng_v, dx(n,:))
           case (3)
              !call update_nonlinear_3d(nlp(:,:,:,:), up(:,:,:,:), viscp(:,:,:,:), &
              !                         lo, hi, ng_nl, ng_u, ng_v, dx(n,:))
@@ -65,20 +66,21 @@ contains
     enddo ! end loop over levels
 
     ! restrict cell-centered multifab data, fill all boundaries
-    call ml_restrict_and_fill(nlevs, nonlinear_term, mla%mba%rr, the_bc_level, bcomp=extrap_comp, same_boundary=.true.)
+    call ml_restrict_and_fill(nlevs, nonlinear_term, mla%mba%rr, the_bc_level, bcomp=extrap_comp, &
+                              same_boundary=.true.)
 
     call destroy(bpt)
 
   end subroutine update_nonlinear
 
-  subroutine update_nonlinear_2d(nonlinear_term, u, viscosity, lo, hi, ng, dx)
+  subroutine update_nonlinear_2d(nonlinear_term, u, viscosity, lo, hi, ng_u, ng_v, dx)
 
     use bl_constants_module
 
-    integer           , intent(in   ) :: lo(:), hi(:), ng
+    integer           , intent(in   ) :: lo(:), hi(:), ng_u, ng_v
     real (kind = dp_t), intent(inout) :: nonlinear_term(lo(1)   :, lo(2)   :,:)  
-    real (kind = dp_t), intent(in   ) ::              u(lo(1)-ng:, lo(2)-ng:,:)  
-    real (kind = dp_t), intent(in   ) ::      viscosity(lo(1)   :, lo(2)   :)  
+    real (kind = dp_t), intent(in   ) ::              u(lo(1)-ng_u:, lo(2)-ng_u:,:)  
+    real (kind = dp_t), intent(in   ) ::      viscosity(lo(1)-ng_v:, lo(2)-ng_v:)  
     real (kind = dp_t), intent(in   ) :: dx(:)
 
     integer :: i, j

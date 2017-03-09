@@ -30,7 +30,7 @@ contains
     real(kind=dp_t), pointer :: sp(:,:,:,:)
 
     integer :: lo(mla%dim), hi(mla%dim)
-    integer :: i, dm, n, nlevs
+    integer :: i, dm, n, nlevs, ng
     
     type(bl_prof_timer), save :: bpt
 
@@ -38,6 +38,7 @@ contains
 
     nlevs = mla%nlevel
     dm    = mla%dim
+    ng = nghost(viscosity(1))
 
     do n=1, nlevs
 
@@ -48,7 +49,7 @@ contains
           hi = upb(get_box(viscosity(n),i))
           select case (dm)
           case (2)
-             call update_viscosity_2d(vp(:,:,1,1), sp(:,:,1,1), lo, hi, dx(n,:))
+             call update_viscosity_2d(vp(:,:,1,1), sp(:,:,1,1), lo, hi, ng, dx(n,:))
           case (3)
           !   call update_viscosity_3d(viscp(:,:,:,:), dgp(:,:,:,:), lo, hi, ng_visc, ng_dg, dx(n,:))
           end select
@@ -63,14 +64,14 @@ contains
 
   end subroutine update_viscosity
 
-  subroutine update_viscosity_2d(viscosity, strain_rate, lo, hi, dx)
+  subroutine update_viscosity_2d(viscosity, strain_rate, lo, hi, ng, dx)
 
     use bl_constants_module
     use probin_module, only: visc_coef, yield_stress, papa_reg
 
-    integer           , intent(in   ) :: lo(:), hi(:)
-    real (kind = dp_t), intent(inout) ::   viscosity(lo(1):,lo(2):)  
-    real (kind = dp_t), intent(in   ) :: strain_rate(lo(1):,lo(2):)  
+    integer           , intent(in   ) :: lo(:), hi(:), ng
+    real (kind = dp_t), intent(inout) ::   viscosity(lo(1)-ng:,lo(2)-ng:)  
+    real (kind = dp_t), intent(in   ) :: strain_rate(lo(1)   :,lo(2)   :)  
     real (kind = dp_t), intent(in   ) :: dx(:)
 
     integer :: i, j

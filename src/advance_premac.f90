@@ -14,42 +14,45 @@ module pre_advance_module
 
 contains
 
-  subroutine advance_premac(mla, uold, sold, lapu, umac, gp, ext_vel_force, visc, dx, dt, the_bc_tower)
+  subroutine advance_premac(mla, uold, sold, lapu, umac, gp, ext_vel_force, viscosity, &
+                            nonlinear_term, dx, dt, the_bc_tower)
 
     use velpred_module
     use mkforce_module
 
     type(ml_layout), intent(in   ) :: mla
-    type(multifab) , intent(inout) :: uold(:)
-    type(multifab) , intent(inout) :: sold(:)
-    type(multifab) , intent(in   ) :: lapu(:)
-    type(multifab) , intent(inout) :: umac(:,:)
-    type(multifab) , intent(in   ) :: gp(:)
-    type(multifab) , intent(in   ) :: ext_vel_force(:)
-    type(multifab) , intent(in   ) :: visc(:)
-    real(kind=dp_t), intent(in   ) :: dx(:,:),dt
+    type(multifab) , intent(inout) ::           uold(:)
+    type(multifab) , intent(inout) ::           sold(:)
+    type(multifab) , intent(in   ) ::           lapu(:)
+    type(multifab) , intent(inout) ::           umac(:,:)
+    type(multifab) , intent(in   ) ::             gp(:)
+    type(multifab) , intent(in   ) ::  ext_vel_force(:)
+    type(multifab) , intent(in   ) ::      viscosity(:)
+    type(multifab) , intent(in   ) :: nonlinear_term(:)
+    real(kind=dp_t), intent(in   ) :: dx(:,:), dt
     type(bc_tower) , intent(in   ) :: the_bc_tower
 
     type(multifab)  :: vel_force(mla%nlevel)
-    integer         :: dm,n,nlevs
+    integer         :: dm, n, nlevs
     real(kind=dp_t) :: visc_fac
 
     type(bl_prof_timer), save :: bpt
 
     call build(bpt, "advance_premac")
 
-    dm    = get_dim(uold(1))
+    dm    = mla%dim
     nlevs = mla%nlevel
 
     do n = 1, nlevs
-       call multifab_build(vel_force(n),get_layout(ext_vel_force(n)),dm,1)
-       call setval(vel_force(n),0.0_dp_t,all=.true.)
+       call multifab_build(vel_force(n), get_layout(ext_vel_force(n)), dm, 1)
+       call setval(vel_force(n), 0.0_dp_t, all=.true.)
     enddo
 
     visc_fac = 1.0d0
-    call mkvelforce(mla, vel_force, ext_vel_force, sold, gp, lapu, visc, visc_fac, the_bc_tower)
+    call mkvelforce(mla, vel_force, ext_vel_force, sold, gp, lapu, viscosity, nonlinear_term, &
+                    visc_fac, the_bc_tower)
 
-    call velpred(nlevs,uold,umac,vel_force,dx,dt,the_bc_tower%bc_tower_array,mla)
+    call velpred(nlevs, uold, umac, vel_force, dx, dt, the_bc_tower%bc_tower_array, mla)
 
     do n = 1, nlevs
        call multifab_destroy(vel_force(n))

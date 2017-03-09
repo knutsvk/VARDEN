@@ -53,8 +53,6 @@ contains
     type(multifab) ::     lapu(mla%nlevel)
     type(multifab) ::     umac(mla%nlevel, mla%dim)
     type(multifab) ::  rhohalf(mla%nlevel)
-    ! visc_loc will be replaced by viscosity when other changes have been incorporated
-    type(multifab) :: visc_loc(mla%nlevel)
 
     real(kind=dp_t) ::  sa_time,  sa_time_start,  sa_time_max
     real(kind=dp_t) ::  va_time,  va_time_start,  va_time_max
@@ -73,10 +71,8 @@ contains
     do n = 1,nlevs
        call multifab_build(    lapu(n), mla%la(n),    dm, 0)
        call multifab_build( rhohalf(n), mla%la(n),     1, 1)
-       call multifab_build(visc_loc(n), mla%la(n),     1, 1)
 
-       call setval( rhohalf(n), 0.d0     , all=.true.)
-       call setval(visc_loc(n), visc_coef, all=.true.)
+       call setval( rhohalf(n), 1.d0     , all=.true.)
 
        do i = 1,dm
          call multifab_build_edge( umac(n,i), mla%la(n),1,1,i)
@@ -98,7 +94,7 @@ contains
       call get_explicit_diffusive_term(mla, lapu, uold, comp, comp, dx, the_bc_tower)
     end do
 
-    call advance_premac(mla, uold, sold, lapu, umac, gp, ext_vel_force, visc_loc, dx, dt, the_bc_tower)
+    call advance_premac(mla, uold, sold, lapu, umac, gp, ext_vel_force, viscosity, nonlinear_term, dx, dt, the_bc_tower)
   
     mac_time_start = parallel_wtime()
  
@@ -128,7 +124,7 @@ contains
     va_time_start = parallel_wtime()
     call build(bpt_v, "Velocity_update")
     call velocity_advance(mla, uold, unew, sold, lapu, rhohalf, umac, gp,  &
-                          ext_vel_force, visc_loc, dx, dt, the_bc_tower)
+                          ext_vel_force, viscosity, nonlinear_term, dx, dt, the_bc_tower)
     call destroy(bpt_v)
     call parallel_barrier()
     va_time = parallel_wtime() - va_time_start
@@ -147,7 +143,6 @@ contains
     do n = 1,nlevs
        call multifab_destroy(    lapu(n))
        call multifab_destroy( rhohalf(n))
-       call multifab_destroy(visc_loc(n))
        do i = 1,dm
          call multifab_destroy(umac(n,i))
        end do

@@ -16,24 +16,24 @@ module viscous_module
 
 contains 
 
-  subroutine visc_solve(mla, unew, lapu, rho, visc, dx, dt, the_bc_tower)
+  subroutine visc_solve(mla, unew, lapu, rho, viscosity, dx, dt, the_bc_tower)
 
-    use mac_multigrid_module    , only : mac_multigrid
-    use probin_module           , only: stencil_order,verbose
+    use mac_multigrid_module, only: mac_multigrid
+    use probin_module       , only: stencil_order, verbose
 
     type(ml_layout), intent(in   ) :: mla
-    type(multifab ), intent(inout) :: unew(:)
-    type(multifab ), intent(in   ) :: lapu(:)
-    type(multifab ), intent(in   ) :: rho(:)
-    type(multifab ), intent(inout) :: visc(:)
-    real(dp_t)     , intent(in   ) :: dx(:,:),dt
+    type(multifab ), intent(inout) ::      unew(:)
+    type(multifab ), intent(in   ) ::      lapu(:)
+    type(multifab ), intent(in   ) ::       rho(:)
+    type(multifab ), intent(inout) :: viscosity(:)
+    real(dp_t)     , intent(in   ) :: dx(:,:), dt
     type(bc_tower ), intent(in   ) :: the_bc_tower
 
     ! Local  
-    type(multifab)  :: rh(mla%nlevel),phi(mla%nlevel)
-    type(multifab)  :: alpha(mla%nlevel),beta(mla%nlevel,mla%dim)
+    type(multifab)  :: rh(mla%nlevel), phi(mla%nlevel)
+    type(multifab)  :: alpha(mla%nlevel), beta(mla%nlevel,mla%dim)
     type(bndry_reg) :: fine_flx(mla%nlevel)
-    integer         :: n,d,nlevs,dm,bc_comp,ng_cell
+    integer         :: n, d, nlevs, dm, bc_comp, ng_cell
     real(kind=dp_t) :: nrm1, nrm2, nrm3
     real(kind=dp_t) :: rel_solver_eps
     real(kind=dp_t) :: abs_solver_eps
@@ -47,17 +47,17 @@ contains
     ng_cell = nghost(unew(1))
 
     do n = 1,nlevs
-       call multifab_build(   rh(n), mla%la(n),  1, 0)
-       call multifab_build(  phi(n), mla%la(n),  1, 1)
-       call multifab_build(alpha(n), mla%la(n),  1, 0)
+       call multifab_build(   rh(n), mla%la(n), 1, 0)
+       call multifab_build(  phi(n), mla%la(n), 1, 1)
+       call multifab_build(alpha(n), mla%la(n), 1, 0)
        do d = 1,dm
           call multifab_build_edge(beta(n,d), mla%la(n), 1, 0, d)
        end do
 
-       call multifab_copy_c(alpha(n),1,rho(n),1,1)
+       call multifab_copy_c(alpha(n), 1, rho(n), 1, 1)
     end do
 
-    call mk_visc_coeffs(nlevs, mla, visc, beta, dt, the_bc_tower)
+    call mk_visc_coeffs(nlevs, mla, viscosity, beta, dt, the_bc_tower)
 
     if (verbose .ge. 1) then
        if (parallel_IOProcessor()) then
@@ -81,7 +81,7 @@ contains
     endif
 
     do n = 1,nlevs
-       call bndry_reg_build(fine_flx(n),mla%la(n),ml_layout_get_pd(mla,n))
+       call bndry_reg_build(fine_flx(n), mla%la(n), ml_layout_get_pd(mla,n))
     end do
 
     rel_solver_eps =  1.d-12
@@ -92,14 +92,13 @@ contains
     !      this is set in velocity_advance
     do d = 1,dm
        do n = 1,nlevs
-          call mkrhs(rh(n), unew(n), lapu(n), rho(n), visc(n), phi(n), dt, dx(n, :), d)
+          call mkrhs(rh(n), unew(n), lapu(n), rho(n), viscosity(n), phi(n), dt, dx(n,:), d)
        end do
        bc_comp = d
-       call mac_multigrid(mla,rh,phi,fine_flx,alpha,beta,dx, &
-                          the_bc_tower,bc_comp,stencil_order, &
-                          rel_solver_eps,abs_solver_eps)
+       call mac_multigrid(mla, rh, phi, fine_flx, alpha, beta, dx, the_bc_tower, bc_comp, &
+                          stencil_order, rel_solver_eps, abs_solver_eps)
        do n = 1,nlevs
-          call multifab_copy_c(unew(n),d,phi(n),1,1)
+          call multifab_copy_c(unew(n), d, phi(n),1,1)
        end do
     end do
 
@@ -131,9 +130,17 @@ contains
        call multifab_destroy(rh(n))
        call multifab_destroy(phi(n))
        call multifab_destroy(alpha(n))
+       if ( parallel_IOProcessor() ) then
+          print *,'...   destroyed alpha  ... '
+          print *,' '
+       end if
        do d = 1,dm
           call multifab_destroy(beta(n,d))
        end do
+       if ( parallel_IOProcessor() ) then
+          print *,'...   destroyed beta  ... '
+          print *,' '
+       end if
     end do
 
     do n = 1,nlevs
@@ -144,9 +151,9 @@ contains
 
   contains
 
-    subroutine mkrhs(rh, unew, lapu, rho, visc, phi, dt, dx, comp)
+    subroutine mkrhs(rh, unew, lapu, rho, viscosity, phi, dt, dx, comp)
 
-      type(multifab) , intent(in   ) :: unew, lapu, rho, visc
+      type(multifab) , intent(in   ) :: unew, lapu, rho, viscosity
       type(multifab) , intent(inout) :: rh, phi
       integer        , intent(in   ) :: comp
       real(dp_t)     , intent(in   ) :: dt, dx(:)
@@ -158,7 +165,7 @@ contains
       real(kind=dp_t), pointer ::  pp(:,:,:,:)
       real(kind=dp_t), pointer ::  lp(:,:,:,:)
       real(kind=dp_t), pointer ::  vp(:,:,:,:)
-      integer :: i, dm, ng_u, ng_r, ng_v
+      integer :: i, dm, ng_u, ng_r
 
       type(bl_prof_timer), save :: bpt
 
@@ -167,7 +174,6 @@ contains
       dm     = get_dim(rh)
       ng_u = nghost(unew)
       ng_r = nghost(rho)
-      ng_v = nghost(visc)
 
       do i = 1, nfabs(unew)
          rhp => dataptr(rh  , i)
@@ -175,14 +181,14 @@ contains
          rp => dataptr(rho , i)
          pp => dataptr(phi , i)
          lp => dataptr(lapu, i)
-         vp => dataptr(visc, i)
+         vp => dataptr(viscosity, i)
          select case (dm)
          case (2)
             call mkrhs_2d(rhp(:,:,1,1), unp(:,:,1,comp), lp(:,:,1,comp), rp(:,:,1,1), &
-                           pp(:,:,1,1), vp(:,:,1,1), dt, dx, ng_u, ng_r, ng_v, comp)
+                           pp(:,:,1,1), vp(:,:,1,1), dt, dx, ng_u, ng_r, comp)
          case (3)
-            call mkrhs_3d(rhp(:,:,:,1), unp(:,:,:,comp), lp(:,:,:,comp), rp(:,:,:,1), &
-                           pp(:,:,:,1), vp(:,:,:,1), dt, dx, ng_u, ng_r, ng_v, comp)
+!            call mkrhs_3d(rhp(:,:,:,1), unp(:,:,:,comp), lp(:,:,:,comp), rp(:,:,:,1), &
+!                           pp(:,:,:,1), vp(:,:,:,1), dt, dx, ng_u, ng_r, comp)
          end select
       end do
 
@@ -190,17 +196,17 @@ contains
 
     end subroutine mkrhs
 
-    subroutine mkrhs_2d(rh, unew, lapu, rho, phi, visc, dt, dx, ng_u, ng_r, ng_v, comp)
+    subroutine mkrhs_2d(rh, unew, lapu, rho, phi, viscosity, dt, dx, ng_u, ng_r, comp)
 
       use probin_module, only: diffusion_type
 
-      integer        , intent(in   ) :: ng_u, ng_r, ng_v, comp
-      real(kind=dp_t), intent(inout) ::      rh(      :,      :)
-      real(kind=dp_t), intent(in   ) ::    unew(1-ng_u:,1-ng_u  :)
-      real(kind=dp_t), intent(in   ) ::    lapu(     1:,     1:)
-      real(kind=dp_t), intent(in   ) ::     rho(1-ng_r:,1-ng_r:)
-      real(kind=dp_t), intent(inout) ::     phi(     0:,     0:)
-      real(kind=dp_t), intent(in   ) ::    visc(1-ng_v:,1-ng_v:)
+      integer        , intent(in   ) :: ng_u, ng_r, comp
+      real(kind=dp_t), intent(inout) ::        rh(      :,      :)
+      real(kind=dp_t), intent(in   ) ::      unew(1-ng_u:,1-ng_u:)
+      real(kind=dp_t), intent(in   ) ::      lapu(     1:,     1:)
+      real(kind=dp_t), intent(in   ) ::       rho(1-ng_r:,1-ng_r:)
+      real(kind=dp_t), intent(inout) ::       phi(     0:,     0:)
+      real(kind=dp_t), intent(in   ) :: viscosity(     1:,     1:)
       real(dp_t)     , intent(in   ) :: dt, dx(:)
 
       integer    :: nx,ny,i,j
@@ -217,7 +223,7 @@ contains
       if (diffusion_type .eq. 1) then
          do j = 1, ny
             do i = 1, nx
-               rh(i,j) = rh(i,j) + dt * visc(i,j) * lapu(i,j)
+               rh(i,j) = rh(i,j) + dt * viscosity(i,j) * lapu(i,j)
             end do
          end do 
       end if
@@ -262,14 +268,14 @@ contains
 
     end subroutine mkrhs_3d
 
-    subroutine mk_visc_coeffs(nlevs, mla, visc, beta, dt, the_bc_tower)
+    subroutine mk_visc_coeffs(nlevs, mla, viscosity, beta, dt, the_bc_tower)
 
       use ml_cc_restriction_module, only: ml_edge_restriction
       use multifab_fill_ghost_module
 
       integer        , intent(in   ) :: nlevs
       type(ml_layout), intent(in   ) :: mla
-      type(multifab ), intent(inout) :: visc(:)
+      type(multifab ), intent(inout) :: viscosity(:)
       type(multifab ), intent(inout) :: beta(:,:)
       real(kind=dp_t), intent(in   ) :: dt
       type(bc_tower ), intent(in   ) :: the_bc_tower
@@ -280,35 +286,34 @@ contains
       real(kind=dp_t), pointer ::  vp(:,:,:,:) 
 
       integer :: lo(mla%dim), hi(mla%dim)
-      integer :: i, dm, ng_v, ng_b, ng_fill 
+      integer :: i, dm, ng_b, ng_fill 
 
       dm   = mla%dim
-      ng_v = nghost(visc(nlevs))
       ng_b = nghost(beta(nlevs,1))
 
-      ng_fill = 1
-      do n = 2, nlevs
-         call multifab_fill_ghost_cells(visc(n), visc(n-1),  &
-                                        ng_fill, mla%mba%rr(n-1,:),  &
-                                        the_bc_tower%bc_tower_array(n-1),  &
-                                        the_bc_tower%bc_tower_array(n  ),  &
-                                        1, dm+1, 1)
-      end do
+      !ng_fill = 1
+      !do n = 2, nlevs
+      !   call multifab_fill_ghost_cells(viscosity(n), viscosity(n-1),  &
+      !                                  ng_fill, mla%mba%rr(n-1,:),  &
+      !                                  the_bc_tower%bc_tower_array(n-1),  &
+      !                                  the_bc_tower%bc_tower_array(n  ),  &
+      !                                  1, dm+1, 1)
+      !end do
 
       do n = 1, nlevs
-         do i = 1, nfabs(visc(n))
-            vp => dataptr(visc(n) , i)
+         do i = 1, nfabs(viscosity(n))
+            vp  => dataptr(viscosity(n) , i)
             bxp => dataptr(beta(n,1), i)
             byp => dataptr(beta(n,2), i)
-            lo  = lwb(get_box(rho(n),i))
-            hi  = upb(get_box(rho(n),i))
+            lo  = lwb(get_box(viscosity(n), i))
+            hi  = upb(get_box(viscosity(n), i))
             select case (dm)
             case (2)
-               call mk_visc_coeffs_2d(bxp(:,:,1,1), byp(:,:,1,1), ng_b, vp(:,:,1,1), ng_v, dt, lo, hi)
+               call mk_visc_coeffs_2d(bxp(:,:,1,1), byp(:,:,1,1), ng_b, vp(:,:,1,1), dt, lo, hi)
             case (3)
-               bzp => dataptr(beta(n,3), i)
-               call mk_visc_coeffs_3d(bxp(:,:,:,1), byp(:,:,:,1), bzp(:,:,:,1), ng_b, vp(:,:,:,1), &
-                                     ng_v, dt, lo, hi)
+!               bzp => dataptr(beta(n,3), i)
+!               call mk_visc_coeffs_3d(bxp(:,:,:,1), byp(:,:,:,1), bzp(:,:,:,1), ng_b, vp(:,:,:,1), &
+!                                     ng_v, dt, lo, hi)
             end select
          end do
       end do
@@ -322,12 +327,12 @@ contains
 
     end subroutine mk_visc_coeffs
 
-    subroutine mk_visc_coeffs_2d(betax, betay, ng_b, visc, ng_v, dt, lo, hi)
+    subroutine mk_visc_coeffs_2d(betax, betay, ng_b, viscosity, dt, lo, hi)
 
-      integer        , intent(in   ) :: ng_b, ng_v, lo(:), hi(:)
-      real(kind=dp_t), intent(inout) :: betax(lo(1)-ng_b:,lo(2)-ng_b:)
-      real(kind=dp_t), intent(inout) :: betay(lo(1)-ng_b:,lo(2)-ng_b:)
-      real(kind=dp_t), intent(in   ) ::  visc(lo(1)-ng_v:,lo(2)-ng_v:)
+      integer        , intent(in   ) :: ng_b, lo(:), hi(:)
+      real(kind=dp_t), intent(inout) ::     betax(lo(1)-ng_b:,lo(2)-ng_b:)
+      real(kind=dp_t), intent(inout) ::     betay(lo(1)-ng_b:,lo(2)-ng_b:)
+      real(kind=dp_t), intent(in   ) :: viscosity(lo(1)     :,lo(2)     :)
       real(kind=dp_t), intent(in   ) :: dt
 
       integer :: i,j
@@ -337,15 +342,35 @@ contains
       !      this is set in velocity_advance
 
       do j = lo(2), hi(2)
-         do i = lo(1), hi(1)+1
-            betax(i,j) = dt * (visc(i,j) + visc(i-1,j)) / TWO
+         do i = lo(1)+1, hi(1)
+            betax(i,j) = dt * (viscosity(i,j) + viscosity(i-1,j)) / TWO
          end do
       end do
 
-      do j = lo(2), hi(2)+1
+      i = lo(1)
+      do j = lo(2), hi(2)
+         betax(i,j) = dt * viscosity(i,j)
+      end do
+
+      i = hi(1)+1
+      do j = lo(2), hi(2)
+         betax(i,j) = dt * viscosity(i-1,j)
+      end do
+
+      do j = lo(2)+1, hi(2)
          do i = lo(1), hi(1)
-            betay(i,j) = dt * (visc(i,j) + visc(i,j-1)) / TWO
+            betay(i,j) = dt * (viscosity(i,j) + viscosity(i,j-1)) / TWO
          end do
+      end do
+
+      j = lo(2)
+      do i = lo(2), hi(2)
+         betax(i,j) = dt * viscosity(i,j)
+      end do
+
+      j = hi(2)+1
+      do i = lo(2), hi(2)
+         betax(i,j) = dt * viscosity(i,j-1)
       end do
 
     end subroutine mk_visc_coeffs_2d

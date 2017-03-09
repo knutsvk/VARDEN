@@ -82,12 +82,13 @@ contains
 
     if ( verbose .ge. 1 ) call print_old(uold, proj_type, time, istep)
 
-    ! compute rate-of-strain magnitude
-    call update_strainrate(mla, strain_rate, uold, dx, the_bc_tower%bc_tower_array)
+    if ( yield_stress > 0.0d0) then
+       ! compute rate-of-strain magnitude
+       call update_strainrate(mla, strain_rate, uold, dx, the_bc_tower%bc_tower_array)
 
-    ! compute viscosity
-    call update_viscosity(mla, viscosity, strain_rate, dx, the_bc_tower%bc_tower_array)
-    !call update_nonlinear(mla, nonlinear_term, uold, viscosity, dx, the_bc_tower%bc_tower_array)
+       ! compute viscosity
+       call update_viscosity(mla, viscosity, strain_rate, dx, the_bc_tower%bc_tower_array)
+    endif
 
     ! compute lapu
     do comp = 1, dm

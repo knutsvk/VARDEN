@@ -87,7 +87,7 @@ contains
 
     ! compute viscosity
     call update_viscosity(mla, viscosity, strain_rate, dx, the_bc_tower%bc_tower_array)
-    call update_nonlinear(mla, nonlinear_term, uold, viscosity, dx, the_bc_tower%bc_tower_array)
+    !call update_nonlinear(mla, nonlinear_term, uold, viscosity, dx, the_bc_tower%bc_tower_array)
 
     ! compute lapu
     do comp = 1, dm

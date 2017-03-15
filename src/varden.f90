@@ -59,6 +59,7 @@ subroutine varden()
   type(multifab), allocatable :: strain_rate_old(:)
   type(multifab), allocatable :: strain_rate_new(:)
   type(multifab), allocatable ::       viscosity(:)
+  type(multifab), allocatable ::         stress(:)
   type(multifab), allocatable ::        plotdata(:)
 
   character(len=5)               :: plot_index, check_index
@@ -122,7 +123,7 @@ subroutine varden()
   allocate(unew(nlevs), snew(nlevs))
   allocate(ext_vel_force(nlevs), ext_scal_force(nlevs))
   allocate(lapu(nlevs))
-  allocate(strain_rate_old(nlevs), strain_rate_new(nlevs), viscosity(nlevs))
+  allocate(strain_rate_old(nlevs), strain_rate_new(nlevs), viscosity(nlevs), stress(nlevs))
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   ! Initial projection if not restart
@@ -281,7 +282,7 @@ subroutine varden()
            if (grids_file_name /= '') &
               call write_grids(grids_file_name, mla, istep)
 
-           ! Create "new" unew, snew, ext_vel_force, ext_scal_force, lapu, strain_rate, viscosity
+           ! Create "new" unew, snew, ext_vel_force, ext_scal_force, lapu, strain_rate, viscosity, stress
            call make_temps(mla)
 
         end if  
@@ -443,6 +444,7 @@ contains
        call multifab_build(strain_rate_old(n), mla_loc%la(n),     1, 0)
        call multifab_build(strain_rate_new(n), mla_loc%la(n),     1, 0)
        call multifab_build(      viscosity(n), mla_loc%la(n),     1, 1)
+       call multifab_build(         stress(n), mla_loc%la(n),     1, 0)
 
        call setval(           unew(n),      ZERO,           all=.true.)
        call setval(           snew(n),      ZERO,           all=.true.)
@@ -453,6 +455,7 @@ contains
        call setval(strain_rate_old(n),      ZERO,           all=.true.)
        call setval(strain_rate_new(n),      ZERO,           all=.true.)
        call setval(      viscosity(n), visc_coef,           all=.true.)
+       call setval(        stress(n),      ZERO,           all=.true.)
     end do
 
   end subroutine make_temps
@@ -468,6 +471,7 @@ contains
        call multifab_destroy(strain_rate_old(n))
        call multifab_destroy(strain_rate_new(n))
        call multifab_destroy(      viscosity(n))
+       call multifab_destroy(        stress(n))
     end do
 
   end subroutine delete_temps
@@ -574,7 +578,7 @@ contains
        call multifab_copy_c(plotdata(n), viscosity_comp, viscosity(n), 1, 1)
 
        stress_comp = viscosity_comp + 1
-       call multifab_copy_c(plotdata(n), stress_comp, nonlinear_term(n), 1, dm)
+       call multifab_copy_c(plotdata(n), stress_comp, stress(n), 1, 1)
 
        gpx_comp = stress_comp + 1
        call multifab_copy_c(plotdata(n), gpx_comp, gp(n), 1, dm)

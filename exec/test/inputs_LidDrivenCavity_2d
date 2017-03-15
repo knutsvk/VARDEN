@@ -26,6 +26,8 @@
  visc_coef = 0.01
  diff_coef = 0.0
 
+ diffusion_type = 2
+
  yield_stress = 0.01
  papa_reg = 0.1
 

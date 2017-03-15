@@ -91,9 +91,10 @@ subroutine varden()
   plot_names(dm+nscal+2) = "vort"
   plot_names(dm+nscal+3) = "strainrate"
   plot_names(dm+nscal+4) = "viscosity"
-  plot_names(dm+nscal+5) = "gpx"
-  plot_names(dm+nscal+6) = "gpy"
-  if (dm > 2) plot_names(dm+nscal+7) = "gpz"
+  plot_names(dm+nscal+5) = "stress"
+  plot_names(dm+nscal+6) = "gpx"
+  plot_names(dm+nscal+7) = "gpy"
+  if (dm > 2) plot_names(dm+nscal+8) = "gpz"
 
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -452,7 +453,6 @@ contains
        call setval(strain_rate_old(n),      ZERO,           all=.true.)
        call setval(strain_rate_new(n),      ZERO,           all=.true.)
        call setval(      viscosity(n), visc_coef,           all=.true.)
-
     end do
 
   end subroutine make_temps
@@ -529,7 +529,7 @@ contains
 
     integer                 :: n, n_plot_comps
     integer                 :: mvel_comp, vort_comp, gpx_comp
-    integer                 :: strainrate_comp, viscosity_comp
+    integer                 :: strainrate_comp, viscosity_comp, stress_comp
     logical                 :: coarsen_plot_data
  
     ! These are only used if you want to coarsen your plotdata before writing
@@ -573,7 +573,10 @@ contains
        viscosity_comp = strainrate_comp + 1
        call multifab_copy_c(plotdata(n), viscosity_comp, viscosity(n), 1, 1)
 
-       gpx_comp = viscosity_comp + 1
+       stress_comp = viscosity_comp + 1
+       call multifab_copy_c(plotdata(n), stress_comp, nonlinear_term(n), 1, dm)
+
+       gpx_comp = stress_comp + 1
        call multifab_copy_c(plotdata(n), gpx_comp, gp(n), 1, dm)
     end do
 

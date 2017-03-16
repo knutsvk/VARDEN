@@ -22,6 +22,7 @@ subroutine varden()
   use checkpoint_module
   use advance_module
   use regrid_module
+  use explicit_diffusive_module, only : get_explicit_diffusive_term
   use strainrate_module
   use viscosity_module
 
@@ -33,9 +34,9 @@ subroutine varden()
 
   implicit none
 
-  integer    :: dm
+  integer    :: dm, comp
   real(dp_t) :: time, dt, dtold, dt_lev, dt_temp
-  integer    :: n,istep
+  integer    :: n, istep
   integer    :: n_chk_comps
   integer    :: last_plt_written, last_chk_written
   integer    :: init_step
@@ -54,6 +55,7 @@ subroutine varden()
   type(multifab), allocatable ::        rhohalf(:)
   type(multifab), allocatable ::  ext_vel_force(:)
   type(multifab), allocatable :: ext_scal_force(:)
+  type(multifab), allocatable ::           lapu(:)
   type(multifab), allocatable ::    strain_rate(:)
   type(multifab), allocatable ::      viscosity(:)
   type(multifab), allocatable ::       plotdata(:)
@@ -117,6 +119,7 @@ subroutine varden()
 
   allocate(unew(nlevs), snew(nlevs))
   allocate(ext_vel_force(nlevs), ext_scal_force(nlevs))
+  allocate(lapu(nlevs))
   allocate(strain_rate(nlevs), viscosity(nlevs))
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -165,7 +168,7 @@ subroutine varden()
 
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  ! Create "new" unew, snew, ext_vel_force, ext_scal_force, strain_rate, viscosity
+  ! Create "new" unew, snew, ext_vel_force, ext_scal_force, lapu, strain_rate, viscosity
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   call make_temps(mla)
@@ -189,8 +192,14 @@ subroutine varden()
   end do
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  ! Update strain rate and viscosity
+  ! Update lapu, strain rate and viscosity
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+
+ ! compute lapu
+  do comp = 1, dm
+    call get_explicit_diffusive_term(mla, lapu, uold, comp, comp, dx, the_bc_tower)
+  end do
 
   if ( yield_stress > 0.0d0 ) then
      ! compute rate-of-strain magnitude
@@ -270,7 +279,7 @@ subroutine varden()
            if (grids_file_name /= '') &
               call write_grids(grids_file_name, mla, istep)
 
-           ! Create "new" unew, snew, ext_vel_force, ext_scal_force, strain_rate, viscosity
+           ! Create "new" unew, snew, ext_vel_force, ext_scal_force, lapu, strain_rate, viscosity
            call make_temps(mla)
 
         end if  
@@ -303,6 +312,11 @@ subroutine varden()
            call multifab_physbc(sold(n), 1, dm+1, nscal, bc)
         end do
 
+        ! compute lapu
+        do comp = 1, dm
+          call get_explicit_diffusive_term(mla, lapu, uold, comp, comp, dx, the_bc_tower)
+        end do
+
         if ( yield_stress > 0.0d0 ) then
            ! compute rate-of-strain magnitude
            call update_strainrate(mla, strain_rate, uold, dx, the_bc_tower%bc_tower_array)
@@ -329,8 +343,8 @@ subroutine varden()
         end if
 
         call advance_timestep(istep, mla, sold, uold, snew, unew, gp, p, ext_vel_force, &
-                              ext_scal_force, viscosity, the_bc_tower, dt, time, dx, press_comp, &
-                              regular_timestep)
+                              ext_scal_force, lapu, viscosity, the_bc_tower, dt, time, dx, &
+                              press_comp, regular_timestep)
 
         do n = 1,nlevs
            call multifab_copy_c(uold(n),1,unew(n),1,dm)
@@ -417,6 +431,7 @@ contains
        call multifab_build(          snew(n), mla_loc%la(n), nscal, ng_cell)
        call multifab_build( ext_vel_force(n), mla_loc%la(n),    dm, 1)
        call multifab_build(ext_scal_force(n), mla_loc%la(n), nscal, 1)
+       call multifab_build(          lapu(n), mla_loc%la(n),    dm, 0)
        call multifab_build(   strain_rate(n), mla_loc%la(n),     1, 0)
        call multifab_build(     viscosity(n), mla_loc%la(n),     1, 1)
 
@@ -425,6 +440,7 @@ contains
        call setval( ext_vel_force(n),      dpdx,  1, dm-1, all=.true.)
        call setval( ext_vel_force(n),      grav, dm,    1, all=.true.)
        call setval(ext_scal_force(n),      ZERO,           all=.true.)
+       call setval(          lapu(n),      ZERO,           all=.true.)
        call setval(   strain_rate(n),      ZERO,           all=.true.)
        call setval(     viscosity(n), visc_coef,           all=.true.)
 
@@ -439,6 +455,7 @@ contains
        call multifab_destroy(snew(n))
        call multifab_destroy(ext_vel_force(n))
        call multifab_destroy(ext_scal_force(n))
+       call multifab_destroy(          lapu(n))
        call multifab_destroy(   strain_rate(n))
        call multifab_destroy(     viscosity(n))
     end do
@@ -484,8 +501,8 @@ contains
        end do
 
        call advance_timestep(istep, mla, sold, uold, snew, unew, gp, p, ext_vel_force, & 
-                             ext_scal_force, viscosity, the_bc_tower, dt, time, dx, press_comp, &
-                             pressure_iters)
+                             ext_scal_force, lapu, viscosity, the_bc_tower, dt, time, dx, &
+                             press_comp, pressure_iters)
 
     end do
 

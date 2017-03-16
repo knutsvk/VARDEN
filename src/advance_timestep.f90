@@ -1,4 +1,4 @@
-module advance_module 
+module advance_module
 
   use BoxLib
   use bl_constants_module
@@ -15,17 +15,16 @@ module advance_module
   use macproject_module        , only : macproject
   use hgproject_module         , only : hgproject
   use rhohalf_module           , only : make_at_halftime
-  use explicit_diffusive_module, only : get_explicit_diffusive_term
   use probin_module, only : nscal, visc_coef, diffusion_type, stencil_order, &
-                            verbose, mg_verbose, cg_verbose, yield_stress
+                            verbose, mg_verbose, cg_verbose
   use proj_parameters
   use bl_prof_module
 
 contains
 
   subroutine advance_timestep(istep, mla, sold, uold, snew, unew, gp, p, ext_vel_force, &
-                              ext_scal_force, viscosity, the_bc_tower, &
-                              dt, time, dx, press_comp, proj_type)
+                              ext_scal_force, lapu, viscosity, the_bc_tower, dt, time, dx, &
+                              press_comp, proj_type)
 
     implicit none
 
@@ -39,13 +38,13 @@ contains
     type(multifab) , intent(inout) ::              p(:)
     type(multifab) , intent(inout) ::  ext_vel_force(:)
     type(multifab) , intent(inout) :: ext_scal_force(:)
+    type(multifab) , intent(inout) ::           lapu(:)
     type(multifab) , intent(inout) ::      viscosity(:)
     real(dp_t)     , intent(in   ) :: dt, time, dx(:,:)
     type(bc_tower) , intent(in   ) :: the_bc_tower
     integer        , intent(in   ) :: press_comp
     integer        , intent(in   ) :: proj_type
 
-    type(multifab) ::     lapu(mla%nlevel)
     type(multifab) ::     umac(mla%nlevel, mla%dim)
     type(multifab) ::  rhohalf(mla%nlevel)
 
@@ -54,7 +53,7 @@ contains
     real(kind=dp_t) :: mac_time, mac_time_start, mac_time_max
     real(kind=dp_t) ::  hg_time,  hg_time_start,  hg_time_max
 
-    integer    :: i,n,comp,dm,nlevs
+    integer    :: i, n, dm, nlevs
 
     type(bl_prof_timer), save :: bpt, bpt_s, bpt_v, bpt_mac, bpt_hg
 
@@ -63,29 +62,24 @@ contains
     dm    = mla%dim
     nlevs = mla%nlevel
 
-    do n = 1,nlevs
-       call multifab_build(    lapu(n), mla%la(n),    dm, 0)
-       call multifab_build( rhohalf(n), mla%la(n),     1, 1)
+    do n = 1, nlevs
+       call multifab_build(rhohalf(n), mla%la(n),     1, 1)
 
-       call setval( rhohalf(n), 1.d0     , all=.true.)
+       call setval(rhohalf(n), 1.d0     , all=.true.)
 
-       do i = 1,dm
-         call multifab_build_edge( umac(n,i), mla%la(n),1,1,i)
-         call setval( umac(n,i),1.d20, all=.true.)
+       do i = 1, dm
+         call multifab_build_edge(umac(n,i), mla%la(n),1,1,i)
+         call setval(umac(n,i),1.d20, all=.true.)
        end do
     end do
 
     if ( verbose .ge. 1 ) call print_old(uold, proj_type, time, istep)
 
-    ! compute lapu
-    do comp = 1, dm
-      call get_explicit_diffusive_term(mla, lapu, uold, comp, comp, dx, the_bc_tower)
-    end do
+    call advance_premac(mla, uold, sold, lapu, umac, gp, ext_vel_force, viscosity, dx, dt, &
+                        the_bc_tower)
 
-    call advance_premac(mla, uold, sold, lapu, umac, gp, ext_vel_force, viscosity, dx, dt, the_bc_tower)
-  
     mac_time_start = parallel_wtime()
- 
+
     call build(bpt_mac, "MAC_Project")
     call macproject(mla, umac, sold, dx, the_bc_tower, press_comp)
     call destroy(bpt_mac)
@@ -95,17 +89,16 @@ contains
 
     sa_time_start = parallel_wtime()
     call build(bpt_s, "Scalar_update")
-    call scalar_advance(mla,sold,snew,umac,ext_scal_force, &
-                        dx,dt,the_bc_tower)
+    call scalar_advance(mla, sold, snew, umac, ext_scal_force, dx, dt, the_bc_tower)
     call destroy(bpt_s)
     call parallel_barrier()
     sa_time = parallel_wtime() - sa_time_start
-    
-    call make_at_halftime(mla,rhohalf,sold,snew,1,1,the_bc_tower%bc_tower_array)
 
-    if (diffusion_type .eq. 2) then
+    call make_at_halftime(mla, rhohalf, sold, snew, 1, 1, the_bc_tower%bc_tower_array)
+
+    if ( diffusion_type .eq. 2 ) then
        do n = 1, nlevs
-          call setval(lapu(n),ZERO)
+          call setval(lapu(n), 0.0d0)
        enddo
     end if
 
@@ -120,33 +113,27 @@ contains
     ! Project the new velocity field.
     hg_time_start = parallel_wtime()
     call build(bpt_hg, "HG_Project")
-    call hgproject(proj_type,mla,unew,uold,rhohalf,p,gp,dx,dt, &
-                   the_bc_tower,press_comp)
+    call hgproject(proj_type, mla, unew, uold, rhohalf, p, gp, dx, dt, the_bc_tower, press_comp)
     call destroy(bpt_hg)
     call parallel_barrier()
     hg_time = parallel_wtime() - hg_time_start
 
-    if ( verbose .ge. 1 ) call print_new(unew,proj_type,time,dt,istep)
+    if ( verbose .ge. 1 ) call print_new(unew, proj_type, time, dt, istep)
 
-    do n = 1,nlevs
-       call multifab_destroy(    lapu(n))
-       call multifab_destroy( rhohalf(n))
-       do i = 1,dm
+    do n = 1, nlevs
+       call multifab_destroy(rhohalf(n))
+       do i = 1, dm
          call multifab_destroy(umac(n,i))
        end do
     end do
 
-    call parallel_reduce(mac_time_max, mac_time, MPI_MAX, &
-                         proc=parallel_IOProcessorNode())
-    call parallel_reduce( hg_time_max,  hg_time, MPI_MAX, &
-                         proc=parallel_IOProcessorNode())
-    call parallel_reduce( sa_time_max,  sa_time, MPI_MAX, &
-                         proc=parallel_IOProcessorNode())
-    call parallel_reduce( va_time_max,  va_time, MPI_MAX, &
-                         proc=parallel_IOProcessorNode())
+    call parallel_reduce(mac_time_max, mac_time, MPI_MAX, proc=parallel_IOProcessorNode())
+    call parallel_reduce( hg_time_max,  hg_time, MPI_MAX, proc=parallel_IOProcessorNode())
+    call parallel_reduce( sa_time_max,  sa_time, MPI_MAX, proc=parallel_IOProcessorNode())
+    call parallel_reduce( va_time_max,  va_time, MPI_MAX, proc=parallel_IOProcessorNode())
 
     if ( verbose .ge. 1 ) then
-       if (parallel_IOProcessor()) then
+       if ( parallel_IOProcessor() ) then
           print *, 'Timing summary:'
           print *, 'Scalar   update: ',  sa_time_max, ' seconds'
           print *, 'Velocity update: ',  va_time_max, ' seconds'
@@ -160,7 +147,7 @@ contains
 
   end subroutine advance_timestep
 
-  subroutine print_old(u,proj_type,time,istep)
+  subroutine print_old(u, proj_type, time, istep)
 
      use probin_module, only : nlevs
 
@@ -170,28 +157,28 @@ contains
      integer       , intent(in) :: istep
 
      real(dp_t) :: nrm1, nrm2, nrm3
-     integer    :: n,dm
+     integer    :: n, dm
 
      dm = u(1)%dim
 
-     do n = 1,nlevs
-         nrm1 = norm_inf(u(n),1,1)
-         nrm2 = norm_inf(u(n),2,1)
-         if (dm > 2) nrm3 = norm_inf(u(n),3,1)
-         if ( parallel_IOProcessor() .and. dm .eq. 2) then
-            if ( proj_type .eq. pressure_iters) then
-              write(6,1000) n,istep,nrm1,nrm2
-            else if ( proj_type .eq. regular_timestep) then
-              write(6,1001) n,time,nrm1,nrm2
-            else 
+     do n = 1, nlevs
+         nrm1 = norm_inf(u(n), 1, 1)
+         nrm2 = norm_inf(u(n), 2, 1)
+         if (dm > 2) nrm3 = norm_inf(u(n), 3, 1)
+         if ( parallel_IOProcessor() .and. dm .eq. 2 ) then
+            if ( proj_type .eq. pressure_iters ) then
+              write(6,1000) n, istep, nrm1, nrm2
+            else if ( proj_type .eq. regular_timestep ) then
+              write(6,1001) n, time, nrm1, nrm2
+            else
               call bl_error('UNKNOWN PROJ_TYPE IN ADVANCE ')
             end if
-         else if ( parallel_IOProcessor() .and. dm .eq. 3) then
-            if ( proj_type .eq. pressure_iters) then
-              write(6,2000) n,istep,nrm1,nrm2,nrm3
-            else if ( proj_type .eq. regular_timestep) then
-              write(6,2001) n,time,nrm1,nrm2,nrm3
-            else 
+         else if ( parallel_IOProcessor() .and. dm .eq. 3 ) then
+            if ( proj_type .eq. pressure_iters ) then
+              write(6,2000) n, istep, nrm1, nrm2, nrm3
+            else if ( proj_type .eq. regular_timestep ) then
+              write(6,2001) n, time, nrm1, nrm2, nrm3
+            else
               call bl_error('UNKNOWN PROJ_TYPE IN ADVANCE ')
             end if
          end if
@@ -205,38 +192,38 @@ contains
 
   end subroutine print_old
 
-  subroutine print_new(u,proj_type,time,dt,istep)
+  subroutine print_new(u, proj_type, time, dt, istep)
 
      use probin_module, only : nlevs
 
      type(multifab), intent(in) :: u(:)
      integer       , intent(in) :: proj_type
-     real(dp_t)    , intent(in) :: time,dt
+     real(dp_t)    , intent(in) :: time, dt
      integer       , intent(in) :: istep
 
      real(dp_t) :: nrm1, nrm2, nrm3
-     integer    :: n,dm
+     integer    :: n, dm
 
      dm = u(1)%dim
 
-      do n = 1,nlevs
-         nrm1 = norm_inf(u(n),1,1)
-         nrm2 = norm_inf(u(n),2,1)
-         if (dm > 2) nrm3 = norm_inf(u(n),3,1)
-         if ( parallel_IOProcessor() .and. dm .eq. 2) then
-            if ( proj_type .eq. pressure_iters) then
-              write(6,1002) n,istep,nrm1,nrm2
-            else if ( proj_type .eq. regular_timestep) then
-              write(6,1003) n,time+dt,nrm1,nrm2
-            else 
+      do n = 1, nlevs
+         nrm1 = norm_inf(u(n), 1, 1)
+         nrm2 = norm_inf(u(n), 2, 1)
+         if ( dm > 2 ) nrm3 = norm_inf(u(n), 3, 1)
+         if ( parallel_IOProcessor() .and. dm .eq. 2 ) then
+            if ( proj_type .eq. pressure_iters ) then
+              write(6,1002) n, istep, nrm1, nrm2
+            else if ( proj_type .eq. regular_timestep ) then
+              write(6,1003) n, time+dt, nrm1, nrm2
+            else
               call bl_error('UNKNOWN PROJ_TYPE IN ADVANCE ')
             end if
-         else if ( parallel_IOProcessor() .and. dm .eq. 3) then
-            if ( proj_type .eq. pressure_iters) then
-              write(6,2002) n,istep,nrm1,nrm2,nrm3
+         else if ( parallel_IOProcessor() .and. dm .eq. 3 ) then
+            if ( proj_type .eq. pressure_iters ) then
+              write(6,2002) n, istep, nrm1, nrm2, nrm3
             else if ( proj_type .eq. regular_timestep) then
-              write(6,2003) n,time+dt,nrm1,nrm2,nrm3
-       else 
+              write(6,2003) n, time+dt, nrm1, nrm2, nrm3
+       else
               call bl_error('UNKNOWN PROJ_TYPE IN ADVANCE ')
             end if
          end if
@@ -250,4 +237,4 @@ contains
 
   end subroutine print_new
 
-end module advance_module 
+end module advance_module

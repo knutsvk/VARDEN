@@ -12,11 +12,11 @@ module estdt_module
 
 contains
 
-  subroutine estdt (lev, u, s, gp, ext_vel_force, dx, dtold, dt)
+  subroutine estdt (lev, u, s, gp, ext_vel_force, lapu, viscosity, dx, dtold, dt)
 
     use probin_module, only: max_dt_growth, cflfac
 
-    type(multifab) , intent( in) :: u,s,gp,ext_vel_force
+    type(multifab) , intent( in) :: u, s, gp, ext_vel_force, lapu, viscosity
     real(kind=dp_t), intent( in) :: dx(:)
     real(kind=dp_t), intent( in) :: dtold
     real(kind=dp_t), intent(out) :: dt

@@ -218,7 +218,8 @@ subroutine varden()
      dt = 1.d20
      dtold = dt
      do n = 1, nlevs
-        call estdt(n, uold(n), sold(n), gp(n), ext_vel_force(n), dx(n,:), dtold, dt_lev)
+        call estdt(n, uold(n), sold(n), gp(n), ext_vel_force(n), lapu(n), viscosity(n), dx(n,:), &
+                   dtold, dt_lev)
         dt = min(dt, dt_lev)
      end do
 
@@ -329,7 +330,7 @@ subroutine varden()
            dtold = dt
            dt = 1.d20
            do n = 1,nlevs
-              call estdt(n, uold(n), sold(n), gp(n), ext_vel_force(n), dx(n,:), dtold, dt_lev)
+              call estdt(n, uold(n), sold(n), gp(n), ext_vel_force(n), lapu(n), viscosity(n), dx(n,:), dtold, dt_lev)
               dt = min(dt, dt_lev)
            end do
            if (fixed_dt > 0.d0) dt = fixed_dt

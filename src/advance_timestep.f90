@@ -22,12 +22,11 @@ module advance_module
   use bl_prof_module
   use strainrate_module
   use viscosity_module
-  use nonlinear_module
 
 contains
 
   subroutine advance_timestep(istep, mla, sold, uold, snew, unew, gp, p, ext_vel_force, &
-                              ext_scal_force, strain_rate, viscosity, nonlinear_term, the_bc_tower, &
+                              ext_scal_force, strain_rate, viscosity, the_bc_tower, &
                               dt, time, dx, press_comp, proj_type)
 
     implicit none
@@ -44,7 +43,6 @@ contains
     type(multifab) , intent(inout) :: ext_scal_force(:)
     type(multifab) , intent(inout) ::    strain_rate(:)
     type(multifab) , intent(inout) ::      viscosity(:)
-    type(multifab) , intent(inout) :: nonlinear_term(:)
     real(dp_t)     , intent(in   ) :: dt, time, dx(:,:)
     type(bc_tower) , intent(in   ) :: the_bc_tower
     integer        , intent(in   ) :: press_comp
@@ -95,7 +93,7 @@ contains
       call get_explicit_diffusive_term(mla, lapu, uold, comp, comp, dx, the_bc_tower)
     end do
 
-    call advance_premac(mla, uold, sold, lapu, umac, gp, ext_vel_force, viscosity, nonlinear_term, dx, dt, the_bc_tower)
+    call advance_premac(mla, uold, sold, lapu, umac, gp, ext_vel_force, viscosity, dx, dt, the_bc_tower)
   
     mac_time_start = parallel_wtime()
  
@@ -124,8 +122,8 @@ contains
 
     va_time_start = parallel_wtime()
     call build(bpt_v, "Velocity_update")
-    call velocity_advance(mla, uold, unew, sold, lapu, rhohalf, umac, gp,  &
-                          ext_vel_force, viscosity, nonlinear_term, dx, dt, the_bc_tower)
+    call velocity_advance(mla, uold, unew, sold, lapu, rhohalf, umac, gp,  ext_vel_force, &
+                          viscosity, dx, dt, the_bc_tower)
     call destroy(bpt_v)
     call parallel_barrier()
     va_time = parallel_wtime() - va_time_start
@@ -158,13 +156,15 @@ contains
     call parallel_reduce( va_time_max,  va_time, MPI_MAX, &
                          proc=parallel_IOProcessorNode())
 
-    if (parallel_IOProcessor()) then
-       print *, 'Timing summary:'
-       print *, 'Scalar   update: ',  sa_time_max, ' seconds'
-       print *, 'Velocity update: ',  va_time_max, ' seconds'
-       print *, ' MAC Projection: ', mac_time_max, ' seconds'
-       print *, '  HG Projection: ',  hg_time_max, ' seconds'
-       print *, ' '
+    if ( verbose .ge. 1 ) then
+       if (parallel_IOProcessor()) then
+          print *, 'Timing summary:'
+          print *, 'Scalar   update: ',  sa_time_max, ' seconds'
+          print *, 'Velocity update: ',  va_time_max, ' seconds'
+          print *, ' MAC Projection: ', mac_time_max, ' seconds'
+          print *, '  HG Projection: ',  hg_time_max, ' seconds'
+          print *, ' '
+       endif
     endif
 
     call destroy(bpt)

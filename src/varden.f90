@@ -22,11 +22,14 @@ subroutine varden()
   use checkpoint_module
   use advance_module
   use regrid_module
+  use strainrate_module
+  use viscosity_module
 
   use probin_module, only : dim_in, max_levs, nlevs, ng_cell, ng_grow, pmask, init_iter, max_step, & 
                             stop_time, restart, chk_int, plot_int, regrid_int, init_shrink, & 
                             fixed_dt, nodal, ref_ratio, fixed_grids, grids_file_name, & 
-                            do_initial_projection, grav, probin_init, probin_close, dpdx, visc_coef
+                            do_initial_projection, grav, probin_init, probin_close, dpdx, &
+                            visc_coef, yield_stress
 
   implicit none
 
@@ -146,6 +149,10 @@ subroutine varden()
         call setval(gp(n)  ,0.0_dp_t, all=.true.)
      end do
 
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  ! Write the grids into a "grdlog" file
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
      if (grids_file_name /= '') &
         call write_grids(grids_file_name,mla,0)
 
@@ -156,8 +163,9 @@ subroutine varden()
 
   end if
 
+
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  ! Write the grids into a "grdlog" file
+  ! Create "new" unew, snew, ext_vel_force, ext_scal_force, strain_rate, viscosity
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   call make_temps(mla)
@@ -178,8 +186,19 @@ subroutine varden()
      !    This is done to impose any Dirichlet bc's on unew or snew.
      call multifab_copy_c(unew(n),1,uold(n),1,dm   ,ng=unew(n)%ng)
      call multifab_copy_c(snew(n),1,sold(n),1,nscal,ng=snew(n)%ng)
-
   end do
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  ! Update strain rate and viscosity
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  if ( yield_stress > 0.0d0 ) then
+     ! compute rate-of-strain magnitude
+     call update_strainrate(mla, strain_rate, uold, dx, the_bc_tower%bc_tower_array)
+
+     ! compute viscosity
+     call update_viscosity(mla, viscosity, strain_rate, dx, the_bc_tower%bc_tower_array)
+  endif
 
   if (restart < 0) then
 
@@ -282,8 +301,15 @@ subroutine varden()
            bc = the_bc_tower%bc_tower_array(n)
            call multifab_physbc(uold(n), 1,    1,    dm, bc)
            call multifab_physbc(sold(n), 1, dm+1, nscal, bc)
-
         end do
+
+        if ( yield_stress > 0.0d0 ) then
+           ! compute rate-of-strain magnitude
+           call update_strainrate(mla, strain_rate, uold, dx, the_bc_tower%bc_tower_array)
+
+           ! compute viscosity
+           call update_viscosity(mla, viscosity, strain_rate, dx, the_bc_tower%bc_tower_array)
+        endif
 
         if (istep > 1) then
            dtold = dt
@@ -303,8 +329,8 @@ subroutine varden()
         end if
 
         call advance_timestep(istep, mla, sold, uold, snew, unew, gp, p, ext_vel_force, &
-                              ext_scal_force, strain_rate, viscosity, the_bc_tower, &
-                              dt, time, dx, press_comp, regular_timestep)
+                              ext_scal_force, viscosity, the_bc_tower, dt, time, dx, press_comp, &
+                              regular_timestep)
 
         do n = 1,nlevs
            call multifab_copy_c(uold(n),1,unew(n),1,dm)
@@ -457,9 +483,9 @@ contains
                                          1,1,dm)
        end do
 
-       call advance_timestep(istep, mla, sold, uold, snew, unew, gp, p, ext_vel_force, &
-                             ext_scal_force, strain_rate, viscosity, the_bc_tower, &
-                             dt, time, dx, press_comp, pressure_iters)
+       call advance_timestep(istep, mla, sold, uold, snew, unew, gp, p, ext_vel_force, & 
+                             ext_scal_force, viscosity, the_bc_tower, dt, time, dx, press_comp, &
+                             pressure_iters)
 
     end do
 

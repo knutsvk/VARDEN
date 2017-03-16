@@ -20,13 +20,11 @@ module advance_module
                             verbose, mg_verbose, cg_verbose, yield_stress
   use proj_parameters
   use bl_prof_module
-  use strainrate_module
-  use viscosity_module
 
 contains
 
   subroutine advance_timestep(istep, mla, sold, uold, snew, unew, gp, p, ext_vel_force, &
-                              ext_scal_force, strain_rate, viscosity, the_bc_tower, &
+                              ext_scal_force, viscosity, the_bc_tower, &
                               dt, time, dx, press_comp, proj_type)
 
     implicit none
@@ -41,7 +39,6 @@ contains
     type(multifab) , intent(inout) ::              p(:)
     type(multifab) , intent(inout) ::  ext_vel_force(:)
     type(multifab) , intent(inout) :: ext_scal_force(:)
-    type(multifab) , intent(inout) ::    strain_rate(:)
     type(multifab) , intent(inout) ::      viscosity(:)
     real(dp_t)     , intent(in   ) :: dt, time, dx(:,:)
     type(bc_tower) , intent(in   ) :: the_bc_tower
@@ -79,14 +76,6 @@ contains
     end do
 
     if ( verbose .ge. 1 ) call print_old(uold, proj_type, time, istep)
-
-    if ( yield_stress > 0.0d0) then
-       ! compute rate-of-strain magnitude
-       call update_strainrate(mla, strain_rate, uold, dx, the_bc_tower%bc_tower_array)
-
-       ! compute viscosity
-       call update_viscosity(mla, viscosity, strain_rate, dx, the_bc_tower%bc_tower_array)
-    endif
 
     ! compute lapu
     do comp = 1, dm

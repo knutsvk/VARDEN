@@ -20,7 +20,8 @@ contains
                            stencil_order,rel_solver_eps,abs_solver_eps)
 
     use ml_solve_module       , only : ml_cc_solve
-    use probin_module         , only : mg_verbose, cg_verbose, mg_bottom_solver, max_mg_bottom_nlevels
+    use probin_module         , only : mg_verbose, cg_verbose, mg_bottom_solver, &
+                                       max_mg_bottom_nlevels, yield_stress, papa_reg
 
     type(ml_layout), intent(in   ) :: mla
     type(multifab) , intent(inout) :: rh(:),phi(:)
@@ -34,6 +35,7 @@ contains
     real(dp_t)     , intent(in   ) :: abs_solver_eps
 
     integer         :: nlevs
+    integer         :: max_iter
 
     ! MG solver defaults
     integer :: do_diagnostics
@@ -50,6 +52,9 @@ contains
        do_diagnostics = 0
     end if
 
+    max_iter = 100
+    if ( yield_stress .gt. 0.0d0 ) max_iter = max(max_iter, int(0.1d0 / papa_reg))
+
     call ml_cc_solve(mla,rh,phi,fine_flx,alpha,beta,dx,the_bc_tower,bc_comp, &
                      eps = rel_solver_eps, &
                      abs_eps = abs_solver_eps, &
@@ -59,6 +64,7 @@ contains
                      do_diagnostics = do_diagnostics, &
                      verbose = mg_verbose, &
                      cg_verbose = cg_verbose, &
+                     max_iter = max_iter, &
                      stencil_order = stencil_order)
 
     call destroy(bpt)

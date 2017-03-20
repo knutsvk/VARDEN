@@ -377,10 +377,12 @@ subroutine varden()
          if ( stop_time >= 0.d0 ) then
             if ( time >= stop_time ) goto 999
          else if ( istep > init_step ) then
-            if ( steady_state(strain_rate_old, strain_rate_new) ) goto 999
+            if ( steady_state(mla, strain_rate_old, strain_rate_new) ) goto 999
          end if
 
-         call multifab_copy(strain_rate_old, strain_rate_new)
+         do n = 1, nlevs
+            call multifab_copy(strain_rate_old(n), strain_rate_new(n))
+         end do
 
      end do ! istep loop
 
@@ -696,21 +698,30 @@ contains
 
   end subroutine write_grids
 
-  logical function steady_state(old, new)
+  function steady_state(mla, old, new) result(r)
 
-      type(multifab), intent(in) :: old
-      type(multifab), intent(in) :: new
+      type(ml_layout), intent(in) :: mla
+      type(multifab ), intent(in) :: old(mla%nlevel)
+      type(multifab ), intent(in) :: new(mla%nlevel)
 
-      type(multifab) :: diff
+      type(multifab) :: diff(mla%nlevel)
+      integer :: nlevs
       real(dp_t) :: max_diff, tol
+      logical :: r
 
-      steady_state = .false.
-      tol = 1.0e-6
+      nlevs = mla%nlevel
+      max_diff = 0.0d0
+      tol = 1.0e-5
+      r = .false.
 
-      diff = multifab_sub_sub(old, new)
-      max_diff = multifab_norm_inf(diff)
+      do n = 1, nlevs
+         call multifab_build(diff(n), mla%la(n), 1, 0)
+         call multifab_copy(diff(n), old(n))
+         call multifab_sub_sub(diff(n), new(n))
+         max_diff = max(max_diff, multifab_norm_inf(diff(n)))
+      end do
 
-      if ( max_diff < tol ) steady_state = .true.
+      if ( max_diff <= tol ) r = .true.
 
   end function steady_state
 

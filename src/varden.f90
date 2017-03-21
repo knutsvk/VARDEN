@@ -728,7 +728,7 @@ contains
 
       nlevs = mla%nlevel
       max_diff = 0.0d0
-      tol = 1.0e-6
+      tol = 1.0e-5
       r = .false.
 
       do n = 1, nlevs

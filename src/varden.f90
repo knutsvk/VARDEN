@@ -56,10 +56,10 @@ subroutine varden()
   type(multifab), allocatable ::   ext_vel_force(:)
   type(multifab), allocatable ::  ext_scal_force(:)
   type(multifab), allocatable ::            lapu(:)
-  type(multifab), allocatable :: strain_rate_old(:)
-  type(multifab), allocatable :: strain_rate_new(:)
+  type(multifab), allocatable ::     strain_rate(:)
   type(multifab), allocatable ::       viscosity(:)
-  type(multifab), allocatable ::         stress(:)
+  type(multifab), allocatable ::      stress_old(:)
+  type(multifab), allocatable ::      stress_new(:)
   type(multifab), allocatable ::        plotdata(:)
 
   character(len=5)               :: plot_index, check_index
@@ -81,7 +81,7 @@ subroutine varden()
   ! Set up plot_names for writing plot files.
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  allocate(plot_names(2*dm+nscal+4))
+  allocate(plot_names(2*dm+nscal+5))
 
   plot_names(1) = "x_vel"
   plot_names(2) = "y_vel"
@@ -123,7 +123,8 @@ subroutine varden()
   allocate(unew(nlevs), snew(nlevs))
   allocate(ext_vel_force(nlevs), ext_scal_force(nlevs))
   allocate(lapu(nlevs))
-  allocate(strain_rate_old(nlevs), strain_rate_new(nlevs), viscosity(nlevs), stress(nlevs))
+  allocate(strain_rate(nlevs), viscosity(nlevs))
+  allocate(stress_old(nlevs), stress_new(nlevs))
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   ! Initial projection if not restart
@@ -205,10 +206,10 @@ subroutine varden()
 
   if ( yield_stress > 0.0d0 ) then
      ! compute rate-of-strain magnitude
-     call update_strainrate(mla, strain_rate_new, uold, dx, the_bc_tower%bc_tower_array)
+     call update_strainrate(mla, strain_rate, uold, dx, the_bc_tower%bc_tower_array)
 
      ! compute viscosity
-     call update_viscosity(mla, viscosity, strain_rate_new, dx, the_bc_tower%bc_tower_array)
+     call update_viscosity(mla, viscosity, strain_rate, dx, the_bc_tower%bc_tower_array)
   endif
 
   if (restart < 0) then
@@ -282,7 +283,7 @@ subroutine varden()
            if (grids_file_name /= '') &
               call write_grids(grids_file_name, mla, istep)
 
-           ! Create "new" unew, snew, ext_vel_force, ext_scal_force, lapu, strain_rate, viscosity, stress
+           ! Create "new" unew, snew, ext_vel_force, ext_scal_force, lapu, strain_rate, viscosity
            call make_temps(mla)
 
         end if  
@@ -322,10 +323,10 @@ subroutine varden()
 
         if ( yield_stress > 0.0d0 ) then
            ! compute rate-of-strain magnitude
-           call update_strainrate(mla, strain_rate_new, uold, dx, the_bc_tower%bc_tower_array)
+           call update_strainrate(mla, strain_rate, uold, dx, the_bc_tower%bc_tower_array)
 
            ! compute viscosity
-           call update_viscosity(mla, viscosity, strain_rate_new, dx, the_bc_tower%bc_tower_array)
+           call update_viscosity(mla, viscosity, strain_rate, dx, the_bc_tower%bc_tower_array)
         endif
 
         if (istep > 1) then
@@ -379,11 +380,11 @@ subroutine varden()
          if ( stop_time >= 0.d0 ) then
             if ( time >= stop_time ) goto 999
          else if ( istep > init_step ) then
-            if ( steady_state(mla, strain_rate_old, strain_rate_new) ) goto 999
+            if ( steady_state(mla, stress_old, stress_new) ) goto 999
          end if
 
          do n = 1, nlevs
-            call multifab_copy(strain_rate_old(n), strain_rate_new(n))
+            call multifab_copy(stress_old(n), stress_new(n))
          end do
 
      end do ! istep loop
@@ -436,26 +437,26 @@ contains
     type(ml_layout),intent(in   ) :: mla_loc
 
     do n = nlevs,1,-1
-       call multifab_build(           unew(n), mla_loc%la(n),    dm, ng_cell)
-       call multifab_build(           snew(n), mla_loc%la(n), nscal, ng_cell)
-       call multifab_build(  ext_vel_force(n), mla_loc%la(n),    dm, 1)
-       call multifab_build( ext_scal_force(n), mla_loc%la(n), nscal, 1)
-       call multifab_build(           lapu(n), mla_loc%la(n),    dm, 0)
-       call multifab_build(strain_rate_old(n), mla_loc%la(n),     1, 0)
-       call multifab_build(strain_rate_new(n), mla_loc%la(n),     1, 0)
-       call multifab_build(      viscosity(n), mla_loc%la(n),     1, 1)
-       call multifab_build(         stress(n), mla_loc%la(n),     1, 0)
+       call multifab_build(          unew(n), mla_loc%la(n),    dm, ng_cell)
+       call multifab_build(          snew(n), mla_loc%la(n), nscal, ng_cell)
+       call multifab_build( ext_vel_force(n), mla_loc%la(n),    dm, 1)
+       call multifab_build(ext_scal_force(n), mla_loc%la(n), nscal, 1)
+       call multifab_build(          lapu(n), mla_loc%la(n),    dm, 0)
+       call multifab_build(   strain_rate(n), mla_loc%la(n),     1, 0)
+       call multifab_build(     viscosity(n), mla_loc%la(n),     1, 1)
+       call multifab_build(    stress_old(n), mla_loc%la(n),     1, 0)
+       call multifab_build(    stress_new(n), mla_loc%la(n),     1, 0)
 
-       call setval(           unew(n),      ZERO,           all=.true.)
-       call setval(           snew(n),      ZERO,           all=.true.)
-       call setval(  ext_vel_force(n),      dpdx,  1, dm-1, all=.true.)
-       call setval(  ext_vel_force(n),      grav, dm,    1, all=.true.)
-       call setval( ext_scal_force(n),      ZERO,           all=.true.)
-       call setval(           lapu(n),      ZERO,           all=.true.)
-       call setval(strain_rate_old(n),      ZERO,           all=.true.)
-       call setval(strain_rate_new(n),      ZERO,           all=.true.)
+       call setval(          unew(n),      ZERO,           all=.true.)
+       call setval(          snew(n),      ZERO,           all=.true.)
+       call setval( ext_vel_force(n),      dpdx,  1, dm-1, all=.true.)
+       call setval( ext_vel_force(n),      grav, dm,    1, all=.true.)
+       call setval(ext_scal_force(n),      ZERO,           all=.true.)
+       call setval(          lapu(n),      ZERO,           all=.true.)
+       call setval(   strain_rate(n),      ZERO,           all=.true.)
        call setval(      viscosity(n), visc_coef,           all=.true.)
-       call setval(        stress(n),      ZERO,           all=.true.)
+       call setval(    stress_old(n),      ZERO,           all=.true.)
+       call setval(    stress_new(n),      ZERO,           all=.true.)
     end do
 
   end subroutine make_temps
@@ -466,12 +467,12 @@ contains
        call multifab_destroy(unew(n))
        call multifab_destroy(snew(n))
        call multifab_destroy( ext_vel_force(n))
-       call multifab_destroy( ext_scal_force(n))
-       call multifab_destroy(           lapu(n))
-       call multifab_destroy(strain_rate_old(n))
-       call multifab_destroy(strain_rate_new(n))
-       call multifab_destroy(      viscosity(n))
-       call multifab_destroy(        stress(n))
+       call multifab_destroy(ext_scal_force(n))
+       call multifab_destroy(          lapu(n))
+       call multifab_destroy(   strain_rate(n))
+       call multifab_destroy(     viscosity(n))
+       call multifab_destroy(    stress_old(n))
+       call multifab_destroy(    stress_new(n))
     end do
 
   end subroutine delete_temps
@@ -557,7 +558,7 @@ contains
 
     allocate(plotdata(nlevs))
 
-    n_plot_comps = 2 * dm + nscal + 4
+    n_plot_comps = 2 * dm + nscal + 5
 
     do n = 1, nlevs
        call multifab_build(plotdata(n), mla%la(n), n_plot_comps, 0)
@@ -572,13 +573,13 @@ contains
                            the_bc_tower%bc_tower_array(n))
 
        strainrate_comp = vort_comp + 1
-       call multifab_copy_c(plotdata(n), strainrate_comp, strain_rate_old(n), 1, 1)
+       call multifab_copy_c(plotdata(n), strainrate_comp, strain_rate(n), 1, 1)
 
        viscosity_comp = strainrate_comp + 1
        call multifab_copy_c(plotdata(n), viscosity_comp, viscosity(n), 1, 1)
 
        stress_comp = viscosity_comp + 1
-       call multifab_copy_c(plotdata(n), stress_comp, stress(n), 1, 1)
+       call multifab_copy_c(plotdata(n), stress_comp, stress_old(n), 1, 1)
 
        gpx_comp = stress_comp + 1
        call multifab_copy_c(plotdata(n), gpx_comp, gp(n), 1, dm)
@@ -718,7 +719,7 @@ contains
 
       nlevs = mla%nlevel
       max_diff = 0.0d0
-      tol = 1.0e-5
+      tol = 1.0e-6
       r = .false.
 
       do n = 1, nlevs

@@ -25,8 +25,9 @@ subroutine varden()
   use explicit_diffusive_module, only : get_explicit_diffusive_term
   use strainrate_module
   use viscosity_module
+  use stress_module
 
-  use probin_module, only : dim_in, max_levs, nlevs, ng_cell, ng_grow, pmask, init_iter, max_step, & 
+  use probin_module, only : dim_in, max_levs, nlevs, ng_cell, ng_grow, pmask, init_iter, max_step, &
                             stop_time, restart, chk_int, plot_int, regrid_int, init_shrink, & 
                             fixed_dt, nodal, ref_ratio, fixed_grids, grids_file_name, & 
                             do_initial_projection, grav, probin_init, probin_close, dpdx, &
@@ -104,7 +105,8 @@ subroutine varden()
 
   if (restart >= 0) then
 
-     call initialize_from_restart(mla, restart, time, dt, dx, pmask, uold, sold, gp, p, the_bc_tower)
+     call initialize_from_restart(mla, restart, time, dt, dx, pmask, uold, sold, gp, p, &
+                                  the_bc_tower)
 
   else if (fixed_grids /= '') then
 
@@ -210,6 +212,9 @@ subroutine varden()
 
      ! compute viscosity
      call update_viscosity(mla, viscosity, strain_rate, dx, the_bc_tower%bc_tower_array)
+
+     ! compute stress magnitude
+     call update_stress(mla, stress_new, viscosity, strain_rate, the_bc_tower%bc_tower_array)
   endif
 
   if (restart < 0) then
@@ -327,13 +332,17 @@ subroutine varden()
 
            ! compute viscosity
            call update_viscosity(mla, viscosity, strain_rate, dx, the_bc_tower%bc_tower_array)
+
+           ! compute stress magnitude
+           call update_stress(mla, stress_new, viscosity, strain_rate, the_bc_tower%bc_tower_array)
         endif
 
         if (istep > 1) then
            dtold = dt
            dt = 1.d20
            do n = 1,nlevs
-              call estdt(n, uold(n), sold(n), gp(n), ext_vel_force(n), lapu(n), viscosity(n), dx(n,:), dtold, dt_lev)
+              call estdt(n, uold(n), sold(n), gp(n), ext_vel_force(n), lapu(n), viscosity(n), &
+                         dx(n,:), dtold, dt_lev)
               dt = min(dt, dt_lev)
            end do
            if (fixed_dt > 0.d0) dt = fixed_dt

@@ -72,6 +72,8 @@ contains
 
     use bl_constants_module
     use bc_module
+    use probin_module, only: u_bcx_lo, v_bcx_lo, u_bcx_hi, v_bcx_hi, &
+                             u_bcy_lo, v_bcy_lo, u_bcy_hi, v_bcy_hi
 
     integer           , intent(in   ) :: lo(:), hi(:), ng
     real (kind = dp_t), intent(inout) :: strain_rate(lo(1)   :, lo(2)   :)  
@@ -82,7 +84,7 @@ contains
     integer :: i, j
     real (kind = dp_t) ux, uy, vx, vy
 
-    do j = lo(2)+1, hi(2)-1
+    do j = lo(2), hi(2)
        do i = lo(1), hi(1)
           ux = (u(i+1,j,1) - u(i-1,j,1)) / (TWO * dx(1))
           vx = (u(i+1,j,2) - u(i-1,j,2)) / (TWO * dx(1))
@@ -92,41 +94,49 @@ contains
        enddo
     enddo
 
-    i = lo(1)
-    do j = lo(2), hi(2)
-       ux = -(THREE * u(i,j,1) - FOUR * u(i+1,j,1) + u(i+2,j,1)) / (TWO * dx(1))
-       vx = -(THREE * u(i,j,2) - FOUR * u(i+1,j,2) + u(i+2,j,2)) / (TWO * dx(1))
-       uy = (u(i,j+1,1) - u(i,j-1,1)) / (TWO * dx(2))
-       vy = (u(i,j+1,2) - u(i,j-1,2)) / (TWO * dx(2))
-       strain_rate(i,j) = sqrt(TWO * (ux**2 + vy**2) + (uy + vx)**2)
-    enddo
+    if ( bc(1,1) == NO_SLIP_WALL ) then
+       i = lo(1)
+       do j = lo(2), hi(2)
+          ux = TWO * (u(i,j,1) - u_bcx_lo) / dx(1)
+          vx = TWO * (u(i,j,2) - v_bcx_lo) / dx(1)
+          uy = (u(i,j+1,1) - u(i,j-1,1)) / (TWO * dx(2))
+          vy = (u(i,j+1,2) - u(i,j-1,2)) / (TWO * dx(2))
+          strain_rate(i,j) = sqrt(TWO * (ux**2 + vy**2) + (uy + vx)**2)
+       enddo
+    endif
 
-    i = hi(1)
-    do j = lo(2), hi(2)
-       ux = (THREE * u(i,j,1) - FOUR * u(i-1,j,1) + u(i-2,j,1)) / (TWO * dx(1))
-       vx = (THREE * u(i,j,2) - FOUR * u(i-1,j,2) + u(i-2,j,2)) / (TWO * dx(1))
-       uy = (u(i,j+1,1) - u(i,j-1,1)) / (TWO * dx(2))
-       vy = (u(i,j+1,2) - u(i,j-1,2)) / (TWO * dx(2))
-       strain_rate(i,j) = sqrt(TWO * (ux**2 + vy**2) + (uy + vx)**2)
-    enddo
+    if ( bc(1,2) == NO_SLIP_WALL ) then
+       i = hi(1)
+       do j = lo(2), hi(2)
+          ux = -TWO * (u(i,j,1) - u_bcx_hi) / dx(1)
+          vx = -TWO * (u(i,j,2) - v_bcx_hi) / dx(1)
+          uy = (u(i,j+1,1) - u(i,j-1,1)) / (TWO * dx(2))
+          vy = (u(i,j+1,2) - u(i,j-1,2)) / (TWO * dx(2))
+          strain_rate(i,j) = sqrt(TWO * (ux**2 + vy**2) + (uy + vx)**2)
+       enddo
+    endif
 
-    j = lo(2)
-    do i = lo(1), hi(1)
-       ux = (u(i+1,j,1) - u(i-1,j,1)) / (TWO * dx(1))
-       vx = (u(i+1,j,2) - u(i-1,j,2)) / (TWO * dx(1))
-       uy = -(THREE * u(i,j,1) - FOUR * u(i,j+1,1) + u(i,j+2,1)) / (TWO * dx(2))
-       vy = -(THREE * u(i,j,2) - FOUR * u(i,j+1,2) + u(i,j+2,2)) / (TWO * dx(2))
-       strain_rate(i,j) = sqrt(TWO * (ux**2 + vy**2) + (uy + vx)**2)
-    enddo
+    if ( bc(2,1) == NO_SLIP_WALL ) then
+       j = lo(2)
+       do i = lo(1), hi(1)
+          ux = (u(i+1,j,1) - u(i-1,j,1)) / (TWO * dx(1))
+          vx = (u(i+1,j,2) - u(i-1,j,2)) / (TWO * dx(1))
+          uy = TWO * (u(i,j,1) - u_bcy_lo) / dx(2)
+          vy = TWO * (u(i,j,2) - v_bcy_lo) / dx(2)
+          strain_rate(i,j) = sqrt(TWO * (ux**2 + vy**2) + (uy + vx)**2)
+       enddo
+    endif
 
-    j = hi(2)
-    do i = lo(1), hi(1)
-       ux = (u(i+1,j,1) - u(i-1,j,1)) / (TWO * dx(1))
-       vx = (u(i+1,j,2) - u(i-1,j,2)) / (TWO * dx(1))
-       uy = (THREE * u(i,j,1) - FOUR * u(i,j-1,1) + u(i,j-2,1)) / (TWO * dx(2))
-       vy = (THREE * u(i,j,2) - FOUR * u(i,j-1,2) + u(i,j-2,2)) / (TWO * dx(2))
-       strain_rate(i,j) = sqrt(TWO * (ux**2 + vy**2) + (uy + vx)**2)
-    enddo
+    if ( bc(2,2) == NO_SLIP_WALL ) then
+       j = hi(2)
+       do i = lo(1), hi(1)
+          ux = (u(i+1,j,1) - u(i-1,j,1)) / (TWO * dx(1))
+          vx = (u(i+1,j,2) - u(i-1,j,2)) / (TWO * dx(1))
+          uy = -TWO * (u(i,j,1) - u_bcy_hi) / dx(2)
+          vy = -TWO * (u(i,j,2) - v_bcy_hi) / dx(2)
+          strain_rate(i,j) = sqrt(TWO * (ux**2 + vy**2) + (uy + vx)**2)
+       enddo
+    endif
 
   end subroutine update_strainrate_2d
 

@@ -92,7 +92,24 @@ contains
        enddo
     enddo
 
-    ! TODO: Also for boundaries in x-direction
+    i = lo(1)
+    do j = lo(2), hi(2)
+       ux = -(THREE * u(i,j,1) - FOUR * u(i+1,j,1) + u(i+2,j,1)) / (TWO * dx(1))
+       vx = -(THREE * u(i,j,2) - FOUR * u(i+1,j,2) + u(i+2,j,2)) / (TWO * dx(1))
+       uy = (u(i,j+1,1) - u(i,j-1,1)) / (TWO * dx(2))
+       vy = (u(i,j+1,2) - u(i,j-1,2)) / (TWO * dx(2))
+       strain_rate(i,j) = sqrt(TWO * (ux**2 + vy**2) + (uy + vx)**2)
+    enddo
+
+    i = hi(1)
+    do j = lo(2), hi(2)
+       ux = (THREE * u(i,j,1) - FOUR * u(i-1,j,1) + u(i-2,j,1)) / (TWO * dx(1))
+       vx = (THREE * u(i,j,2) - FOUR * u(i-1,j,2) + u(i-2,j,2)) / (TWO * dx(1))
+       uy = (u(i,j+1,1) - u(i,j-1,1)) / (TWO * dx(2))
+       vy = (u(i,j+1,2) - u(i,j-1,2)) / (TWO * dx(2))
+       strain_rate(i,j) = sqrt(TWO * (ux**2 + vy**2) + (uy + vx)**2)
+    enddo
+
     j = lo(2)
     do i = lo(1), hi(1)
        ux = (u(i+1,j,1) - u(i-1,j,1)) / (TWO * dx(1))

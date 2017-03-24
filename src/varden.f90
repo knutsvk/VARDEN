@@ -383,7 +383,7 @@ subroutine varden()
 
          if ( stop_time >= 0.d0 ) then
             if ( time >= stop_time ) goto 999
-         else if ( istep > init_step ) then
+         else if ( istep > init_step+1 ) then
             if ( yield_stress > 0.d0 ) then
                if ( steady_state(mla, stress_old, stress_new) ) goto 999
             else

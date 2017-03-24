@@ -359,11 +359,6 @@ subroutine varden()
                               ext_scal_force, lapu, viscosity, the_bc_tower, dt, time, dx, &
                               press_comp, regular_timestep)
 
-        do n = 1,nlevs
-           call multifab_copy_c(uold(n),1,unew(n),1,dm)
-           call multifab_copy_c(sold(n),1,snew(n),1,nscal)
-        end do
-
         time = time + dt
 
          if (parallel_IOProcessor()) then
@@ -389,10 +384,16 @@ subroutine varden()
          if ( stop_time >= 0.d0 ) then
             if ( time >= stop_time ) goto 999
          else if ( istep > init_step ) then
-            if ( steady_state(mla, stress_old, stress_new) ) goto 999
+            if ( yield_stress > 0.d0 ) then
+               if ( steady_state(mla, stress_old, stress_new) ) goto 999
+            else
+               if ( steady_state(mla, uold, unew) ) goto 999
+            end if
          end if
 
          do n = 1, nlevs
+            call multifab_copy_c(uold(n),1,unew(n),1,dm)
+            call multifab_copy_c(sold(n),1,snew(n),1,nscal)
             call multifab_copy(stress_old(n), stress_new(n))
          end do
 
@@ -722,17 +723,19 @@ contains
       type(multifab ), intent(in) :: new(mla%nlevel)
 
       type(multifab) :: diff(mla%nlevel)
-      integer :: nlevs
+      integer :: nlevs, nc, ng
       real(dp_t) :: max_diff, tol
       logical :: r
 
       nlevs = mla%nlevel
+      nc = ncomp(old(1))
+      ng = nghost(old(1))
       max_diff = 0.0d0
       tol = 1.0e-5
       r = .false.
 
       do n = 1, nlevs
-         call multifab_build(diff(n), mla%la(n), 1, 0)
+         call multifab_build(diff(n), mla%la(n), nc, ng)
          call multifab_copy(diff(n), old(n))
          call multifab_sub_sub(diff(n), new(n))
          max_diff = max(max_diff, multifab_norm_inf(diff(n)))

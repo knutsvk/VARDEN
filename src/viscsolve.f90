@@ -19,7 +19,7 @@ contains
   subroutine visc_solve(mla, unew, lapu, rho, viscosity, dx, dt, the_bc_tower)
 
     use mac_multigrid_module, only: mac_multigrid
-    use probin_module       , only: stencil_order, verbose
+    use probin_module       , only: stencil_order, verbose, prob_lo, prob_hi
 
     type(ml_layout), intent(in   ) :: mla
     type(multifab ), intent(inout) ::      unew(:)
@@ -474,7 +474,8 @@ contains
 
     do n = 1, nlevs
        call multifab_fill_boundary_c(snew(n),icomp,1)
-       call multifab_physbc(snew(n),icomp,bc_comp,1,the_bc_tower%bc_tower_array(n))
+       call multifab_physbc(snew(n), icomp, bc_comp, 1, the_bc_tower%bc_tower_array(n), &
+                            dx=dx(n), prob_lo=prob_lo(n), prob_hi=prob_hi(n))
     enddo
 
     do n = nlevs, 2, -1

@@ -24,7 +24,7 @@ contains
 
     use probin_module, only : verbose, nodal, pmask, &
          amr_buf_width, ref_ratio, max_levs, nscal, nlevs, max_grid_size, &
-         ng_cell, ng_grow
+         ng_cell, ng_grow, prob_lo, prob_hi
 
     type(ml_layout), intent(inout) :: mla
     type(multifab),  pointer       :: uold(:),sold(:),gp(:),p(:)
@@ -136,7 +136,8 @@ contains
           ! Need to fill ghost cells here in case we use them in tagging
           if (nl .eq. 1) then
              call multifab_fill_boundary(sold(nl))
-             call multifab_physbc(sold(nl),1,dm+1,nscal,the_bc_tower%bc_tower_array(nl))
+             call multifab_physbc(sold(nl), 1, dm+1, nscal, the_bc_tower%bc_tower_array(nl), &
+                                  dx=dx(nl), prob_lo=prob_lo(nl), prob_hi=prob_hi(nl))
           else 
              call multifab_fill_ghost_cells(sold(nl),sold(nl-1),sold(nl)%ng,mba%rr((nl-1),:), &
                   the_bc_tower%bc_tower_array(nl-1), &

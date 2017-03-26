@@ -189,8 +189,10 @@ subroutine varden()
      call multifab_fill_boundary(sold(n))
 
      bc = the_bc_tower%bc_tower_array(n)
-     call multifab_physbc(uold(n),1,1,   dm,   bc)
-     call multifab_physbc(sold(n),1,dm+1,nscal,bc)
+     call multifab_physbc(uold(n), 1, 1,    dm,    bc, &
+                          dx=dx(n), prob_lo=prob_lo(n), prob_hi=prob_hi(n))
+     call multifab_physbc(sold(n), 1, dm+1, nscal, bc, &
+                          dx=dx(n), prob_lo=prob_lo(n), prob_hi=prob_hi(n))
 
      !    This is done to impose any Dirichlet bc's on unew or snew.
      call multifab_copy_c(unew(n),1,uold(n),1,dm   ,ng=unew(n)%ng)
@@ -317,8 +319,10 @@ subroutine varden()
            call multifab_fill_boundary(gp(n))
 
            bc = the_bc_tower%bc_tower_array(n)
-           call multifab_physbc(uold(n), 1,    1,    dm, bc)
-           call multifab_physbc(sold(n), 1, dm+1, nscal, bc)
+           call multifab_physbc(uold(n), 1,    1,    dm, bc, &
+                                dx=dx, prob_lo=prob_lo, prob_hi=prob_hi)
+           call multifab_physbc(sold(n), 1, dm+1, nscal, bc, &
+                                dx=dx, prob_lo=prob_lo, prob_hi=prob_hi)
         end do
 
         ! compute lapu

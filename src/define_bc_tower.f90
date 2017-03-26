@@ -243,6 +243,16 @@ module define_bc_module
           adv_bc_level(igrid,d,lohi,press_comp) = EXT_DIR         ! pressure
           adv_bc_level(igrid,d,lohi,extrap_comp) = REFLECT_EVEN   ! generic extrap bc
 
+       else if (phys_bc_level(igrid,d,lohi) == REG_LID) then
+
+          adv_bc_level(igrid,d,lohi,1) = EXT_DIR               ! normal vel.
+          adv_bc_level(igrid,d,lohi,2) = VEL_PROF              ! tangential vel.
+          do ns = 1, nscal
+             adv_bc_level(igrid,d,lohi,dm+ns) = HOEXTRAP       ! density and tracers
+          enddo
+          adv_bc_level(igrid,d,lohi,press_comp) = FOEXTRAP     ! pressure
+          adv_bc_level(igrid,d,lohi,extrap_comp) = FOEXTRAP    ! generic extrap bc
+
        end if
 
     end do

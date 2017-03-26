@@ -75,6 +75,7 @@ contains
 
     integer :: i,j
     integer :: ngylo, ngyhi
+    real(kind=dp_t) :: x2
 
     if (bc(2,1) .eq. INTERIOR) then  ! y-lo direction
        ngylo = ng
@@ -228,6 +229,15 @@ contains
        end do
     else if (bc(2,2) .eq. INTERIOR) then
        ! do nothing
+    else if (bc(2,2) .eq. VEL_PROF) then
+       ! u = 16 x^2 (1 - x^2)
+       ! Need to get prob_lo, dx()
+       do j = 1, ng
+          do i = lo(1)-ng, hi(1)+ng
+             x2 = prob_lo + (0.5d0 + i) * dx(1)
+             s(i,hi(2)+j) = 16.0d0 * x2 * (1.0d0 - x2)
+          end do
+       end do
     else 
        print *,'bc(2,2) = ',bc(2,2)
        call bl_error('BC(2,2) = NOT YET SUPPORTED')

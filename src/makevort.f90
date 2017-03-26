@@ -37,7 +37,7 @@ contains
       call multifab_fill_boundary(u)
 
       ! Fill the ghost cells at the physical boundaries
-      call multifab_physbc(u, 1, 1, dm, bc, dx=dx, prob_lo=prob_lo, prob_hi=prob_hi)
+      call multifab_physbc(u, 1, 1, dm, bc, dx_in=dx, prob_lo_in=prob_lo, prob_hi_in=prob_hi)
 
       do i = 1, nfabs(u)
          up => dataptr(u, i)

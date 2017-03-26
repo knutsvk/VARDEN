@@ -245,8 +245,8 @@ module define_bc_module
 
        else if (phys_bc_level(igrid,d,lohi) == REG_LID) then
 
-          adv_bc_level(igrid,d,lohi,1) = EXT_DIR               ! normal vel.
-          adv_bc_level(igrid,d,lohi,2) = VEL_PROF              ! tangential vel.
+          adv_bc_level(igrid,d,lohi,1) = VEL_PROF              ! normal vel.
+          adv_bc_level(igrid,d,lohi,2) = EXT_DIR               ! tangential vel.
           do ns = 1, nscal
              adv_bc_level(igrid,d,lohi,dm+ns) = HOEXTRAP       ! density and tracers
           enddo
@@ -347,6 +347,13 @@ module define_bc_module
           if (prob_type .eq. 6 .or. prob_type .eq. 7) then
              ell_bc_level(comp,d,lohi,press_comp) = BC_DIR
           end if
+
+       else if (phys_bc_level(comp,d,lohi) == REG_LID) then
+          ell_bc_level(comp,d,lohi,1:dm) = BC_DIR   ! vel.
+          do ns = 1, nscal
+             ell_bc_level(comp,d,lohi,dm+ns) = BC_NEU   ! density and tracers
+          enddo
+          ell_bc_level(comp,d,lohi,press_comp) = BC_NEU   ! pressure
 
        end if
 

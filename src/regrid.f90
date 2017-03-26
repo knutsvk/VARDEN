@@ -137,7 +137,7 @@ contains
           if (nl .eq. 1) then
              call multifab_fill_boundary(sold(nl))
              call multifab_physbc(sold(nl), 1, dm+1, nscal, the_bc_tower%bc_tower_array(nl), &
-                                  dx=dx(nl), prob_lo=prob_lo(nl), prob_hi=prob_hi(nl))
+                                  dx_in=dx(nl,:), prob_lo_in=prob_lo, prob_hi_in=prob_hi)
           else 
              call multifab_fill_ghost_cells(sold(nl),sold(nl-1),sold(nl)%ng,mba%rr((nl-1),:), &
                   the_bc_tower%bc_tower_array(nl-1), &

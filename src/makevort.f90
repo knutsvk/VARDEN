@@ -4,6 +4,7 @@ module vort_module
   use multifab_module
   use define_bc_module
   use multifab_physbc_module
+  use probin_module, only: prob_lo, prob_hi
 
   implicit none
 
@@ -36,7 +37,7 @@ contains
       call multifab_fill_boundary(u)
 
       ! Fill the ghost cells at the physical boundaries
-      call multifab_physbc(u, 1, 1, dm, bc)
+      call multifab_physbc(u, 1, 1, dm, bc, dx=dx, prob_lo=prob_lo, prob_hi=prob_hi)
 
       do i = 1, nfabs(u)
          up => dataptr(u, i)

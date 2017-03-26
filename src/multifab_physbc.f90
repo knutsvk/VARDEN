@@ -30,10 +30,19 @@ contains
     type(bl_prof_timer), save :: bpt
 
     dm = get_dim(s)
-
     ng = nghost(s)
 
     if (ng == 0) return
+
+    ! set optional arguments
+    time    = ZERO
+    dx      = ZERO
+    prob_lo = ZERO
+    prob_hi = ZERO
+    if (present(time_in))       time = time_in
+    if (present(dx_in))           dx = dx_in
+    if (present(prob_lo_in)) prob_lo = prob_lo_in
+    if (present(prob_hi_in)) prob_hi = prob_hi_in
 
     call build(bpt,"multifab_physbc")
 
@@ -46,13 +55,15 @@ contains
           do scomp = start_scomp,start_scomp+num_comp-1
              bccomp = start_bccomp + scomp - start_scomp
              call physbc_2d(sp(:,:,1,scomp), lo, hi, ng, &
-                            the_bc_level%adv_bc_level_array(i,:,:,bccomp),bccomp)
+                            the_bc_level%adv_bc_level_array(i,:,:,bccomp), bccomp & 
+                            time, dx, prob_lo, prob_hi)
           end do
        case (3)
           do scomp = start_scomp,start_scomp+num_comp-1
              bccomp = start_bccomp + scomp - start_scomp
              call physbc_3d(sp(:,:,:,scomp), lo, hi, ng, &
-                            the_bc_level%adv_bc_level_array(i,:,:,bccomp),bccomp)
+                            the_bc_level%adv_bc_level_array(i,:,:,bccomp), bccomp &
+                            time, dx, prob_lo, prob_hi)
           end do
        end select
     end do
@@ -61,7 +72,7 @@ contains
 
   end subroutine multifab_physbc
 
-  subroutine physbc_2d(s,lo,hi,ng,bc,icomp)
+  subroutine physbc_2d(s, lo, hi, ng, bc, icomp, time, dx, prob_lo, prob_hi)
 
     use bc_module
     use bl_constants_module
@@ -70,11 +81,13 @@ contains
     real(kind=dp_t), intent(inout) :: s(lo(1)-ng:,lo(2)-ng:)
     integer        , intent(in   ) :: bc(:,:)
     integer        , intent(in   ) :: icomp
+    real(kind=dp_t), intent(in   ) :: time, dx(:), prob_lo(:), prob_hi(:)
 
     ! Local variables
 
     integer :: i,j
     integer :: ngylo, ngyhi
+    real(kind=dp_t) :: x2
 
     if (bc(2,1) .eq. INTERIOR) then  ! y-lo direction
        ngylo = ng
@@ -228,6 +241,14 @@ contains
        end do
     else if (bc(2,2) .eq. INTERIOR) then
        ! do nothing
+    else if (bc(2,2) .eq. VEL_PROF) then
+       ! u = 16 x^2 (1 - x^2)
+       do j = 1, ng
+          do i = lo(1)-ng, hi(1)+ng
+             x2 = prob_lo(1) + (0.5d0 + i) * dx(1)
+             s(i,hi(2)+j) = 16.0d0 * x2 * (1.0d0 - x2)
+          end do
+       end do
     else 
        print *,'bc(2,2) = ',bc(2,2)
        call bl_error('BC(2,2) = NOT YET SUPPORTED')
@@ -235,7 +256,7 @@ contains
 
   end subroutine physbc_2d
 
-  subroutine physbc_3d(s,lo,hi,ng,bc,icomp)
+  subroutine physbc_3d(s, lo, hi, ng, bc, icomp, time, dx, prob_lo, prob_hi)
 
     use bc_module
     use bl_constants_module
@@ -244,6 +265,7 @@ contains
     real(kind=dp_t), intent(inout) :: s(lo(1)-ng:, lo(2)-ng:, lo(3)-ng:)
     integer        , intent(in   ) :: bc(:,:)
     integer        , intent(in   ) :: icomp
+    real(kind=dp_t), intent(in   ) :: time, dx(:), prob_lo(:), prob_hi(:)
 
     ! Local variables
 

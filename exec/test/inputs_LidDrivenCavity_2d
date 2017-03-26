@@ -35,9 +35,7 @@
  bcx_lo = 15
  bcx_hi = 15
  bcy_lo = 15
- bcy_hi = 15
-
- u_bcy_hi = 1.d0
+ bcy_hi = 18
 
  verbose = 0
  mg_verbose = 0

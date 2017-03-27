@@ -255,9 +255,12 @@ contains
        call bc_tower_level_build(the_bc_tower,n,mla%la(n))
     end do
 
-    call ml_restrict_and_fill(nlevs,uold,mla%mba%rr,the_bc_tower%bc_tower_array,bcomp=1)
-    call ml_restrict_and_fill(nlevs,sold,mla%mba%rr,the_bc_tower%bc_tower_array,bcomp=dm+1)
-    call ml_restrict_and_fill(nlevs,gp  ,mla%mba%rr,the_bc_tower%bc_tower_array,bcomp=1)
+    call ml_restrict_and_fill(nlevs, uold, mla%mba%rr, the_bc_tower%bc_tower_array, bcomp=1, &
+                              dx_in=dx(1,:), prob_lo_in=prob_lo, prob_hi_in=prob_hi)
+    call ml_restrict_and_fill(nlevs, sold, mla%mba%rr, the_bc_tower%bc_tower_array, bcomp=dm+1, &
+                              dx_in=dx(1,:), prob_lo_in=prob_lo, prob_hi_in=prob_hi)
+    call ml_restrict_and_fill(nlevs, gp  , mla%mba%rr, the_bc_tower%bc_tower_array, bcomp=1, &
+                              dx_in=dx(1,:), prob_lo_in=prob_lo, prob_hi_in=prob_hi)
     
     if (nlevs .eq. 1) then
        ! fill ghost cells for two adjacent grids at the same level

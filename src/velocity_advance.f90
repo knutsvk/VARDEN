@@ -67,7 +67,8 @@ contains
     !********************************************************
 
     visc_fac = ONE
-    call mkvelforce(mla, vel_force, ext_vel_force, sold, gp, lapu, viscosity, visc_fac, the_bc_tower)
+    call mkvelforce(mla, vel_force, ext_vel_force, sold, gp, lapu, viscosity, visc_fac, dx, &
+                    the_bc_tower)
 
     !********************************************************
     ! Create the edge state velocities
@@ -83,7 +84,7 @@ contains
     ! The lapu term will be added to the rhs in visc_solve
     ! for Crank-Nicolson
     visc_fac = ZERO
-    call mkvelforce(mla, vel_force, ext_vel_force, rhohalf, gp, lapu, viscosity, visc_fac, &
+    call mkvelforce(mla, vel_force, ext_vel_force, rhohalf, gp, lapu, viscosity, visc_fac, dx, &
                     the_bc_tower)
 
     !********************************************************

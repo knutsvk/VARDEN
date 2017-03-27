@@ -216,7 +216,7 @@ subroutine varden()
      call update_viscosity(mla, viscosity, strain_rate, dx, the_bc_tower%bc_tower_array)
 
      ! compute stress magnitude
-     call update_stress(mla, stress_new, viscosity, strain_rate, the_bc_tower%bc_tower_array)
+     call update_stress(mla, stress_new, viscosity, strain_rate, dx, the_bc_tower%bc_tower_array)
   endif
 
   if (restart < 0) then
@@ -338,7 +338,8 @@ subroutine varden()
            call update_viscosity(mla, viscosity, strain_rate, dx, the_bc_tower%bc_tower_array)
 
            ! compute stress magnitude
-           call update_stress(mla, stress_new, viscosity, strain_rate, the_bc_tower%bc_tower_array)
+           call update_stress(mla, stress_new, viscosity, strain_rate, dx, &
+                              the_bc_tower%bc_tower_array)
         endif
 
         if (istep > 1) then

@@ -17,7 +17,7 @@ contains
 
     use bl_constants_module
     use ml_restrict_fill_module
-    use probin_module, only: extrap_comp
+    use probin_module, only: extrap_comp, prob_lo, prob_hi
 
     type(ml_layout)   , intent(in   ) :: mla
     type(multifab)    , intent(inout) :: strain_rate(:)
@@ -62,7 +62,8 @@ contains
     enddo ! end loop over levels
 
     ! restrict cell-centered multifab data, fill all boundaries
-    call ml_restrict_and_fill(nlevs, strain_rate, mla%mba%rr, the_bc_level, bcomp=extrap_comp)
+    call ml_restrict_and_fill(nlevs, strain_rate, mla%mba%rr, the_bc_level, bcomp=extrap_comp, &
+                              dx_in=dx(1,:), prob_lo_in=prob_lo, prob_hi_in=prob_hi)
 
     call destroy(bpt)
 

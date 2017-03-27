@@ -48,7 +48,7 @@ contains
     enddo
 
     visc_fac = 1.0d0
-    call mkvelforce(mla, vel_force, ext_vel_force, sold, gp, lapu, viscosity, visc_fac, &
+    call mkvelforce(mla, vel_force, ext_vel_force, sold, gp, lapu, viscosity, visc_fac, dx, &
                     the_bc_tower)
 
     call velpred(nlevs, uold, umac, vel_force, dx, dt, the_bc_tower%bc_tower_array, mla)

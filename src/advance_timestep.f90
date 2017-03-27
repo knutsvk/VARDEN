@@ -94,7 +94,7 @@ contains
     call parallel_barrier()
     sa_time = parallel_wtime() - sa_time_start
 
-    call make_at_halftime(mla, rhohalf, sold, snew, 1, 1, the_bc_tower%bc_tower_array)
+    call make_at_halftime(mla, rhohalf, sold, snew, 1, 1, dx, the_bc_tower%bc_tower_array)
 
     if ( diffusion_type .eq. 2 ) then
        do n = 1, nlevs

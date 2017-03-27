@@ -4,7 +4,7 @@ module multifab_physbc_module
   use define_bc_module
   use bl_types
   use bl_error_module
-  use probin_module, only: rho_bc, trac_bc, u_bc, v_bc, w_bc
+  use probin_module, only: rho_bc, trac_bc, u_bc, v_bc, w_bc, prob_type
 
   implicit none
 
@@ -216,7 +216,19 @@ contains
     ! upper Y
     !--------------------------------------------------------------------------
     if (bc(2,2) .eq. EXT_DIR) then
-       if (icomp.eq.1) s(lo(1)-ng:hi(1)+ng,hi(2)+1:hi(2)+ng) = u_bc(2,2)
+       if (icomp.eq.1) then
+          if (prob_type .eq. 4) then
+             ! u = 16 x^2 (1 - x^2)
+             do j = 1, ng
+                do i = lo(1)-ng, hi(1)+ng
+                   x = prob_lo(1) + (0.5d0 + i) * dx(1)
+                   s(i,hi(2)+j) = 16.0d0 * x * x * (1.0d0 - x * x)
+                end do
+             end do
+          else
+             s(lo(1)-ng:hi(1)+ng,hi(2)+1:hi(2)+ng) = u_bc(2,2)
+          end if
+       end if
        if (icomp.eq.2) s(lo(1)-ng:hi(1)+ng,hi(2)+1:hi(2)+ng) = v_bc(2,2)
        if (icomp.eq.3) s(lo(1)-ng:hi(1)+ng,hi(2)+1:hi(2)+ng) = rho_bc(2,2)
        if (icomp.eq.4) s(lo(1)-ng:hi(1)+ng,hi(2)+1:hi(2)+ng) = trac_bc(2,2)
@@ -243,14 +255,6 @@ contains
        end do
     else if (bc(2,2) .eq. INTERIOR) then
        ! do nothing
-    else if (bc(2,2) .eq. VEL_PROF) then
-       ! u = 16 x^2 (1 - x^2)
-       do j = 1, ng
-          do i = lo(1)-ng, hi(1)+ng
-             x = prob_lo(1) + (0.5d0 + i) * dx(1)
-             s(i,hi(2)+j) = 16.0d0 * x * x * (1.0d0 - x * x)
-          end do
-       end do
     else 
        print *,'bc(2,2) = ',bc(2,2)
        call bl_error('BC(2,2) = NOT YET SUPPORTED')

@@ -18,6 +18,7 @@ contains
 
     use bl_constants_module
     use ml_restrict_fill_module
+    use probin_module, only: prob_lo, prob_hi
 
     type(ml_layout)   , intent(in   ) :: mla
     type(multifab)    , intent(in   ) :: sold(:)
@@ -101,9 +102,12 @@ contains
     enddo ! end loop over levels
 
     if (is_vel) then
-       call ml_restrict_and_fill(nlevs, snew, mla%mba%rr, the_bc_level, bcomp=1)
+       call ml_restrict_and_fill(nlevs, snew, mla%mba%rr, the_bc_level, bcomp=1, &
+                                 dx_in=dx(1,:), prob_lo_in=prob_lo, prob_hi_in=prob_hi)
+
     else
-       call ml_restrict_and_fill(nlevs, snew, mla%mba%rr, the_bc_level, bcomp=dm+1)
+       call ml_restrict_and_fill(nlevs, snew, mla%mba%rr, the_bc_level, bcomp=dm+1, &
+                                 dx_in=dx(1,:), prob_lo_in=prob_lo, prob_hi_in=prob_hi)
     end if
 
     call destroy(bpt)

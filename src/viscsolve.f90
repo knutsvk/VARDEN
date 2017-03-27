@@ -19,7 +19,7 @@ contains
   subroutine visc_solve(mla, unew, lapu, rho, viscosity, dx, dt, the_bc_tower)
 
     use mac_multigrid_module, only: mac_multigrid
-    use probin_module       , only: stencil_order, verbose
+    use probin_module       , only: stencil_order, verbose, prob_lo, prob_hi
 
     type(ml_layout), intent(in   ) :: mla
     type(multifab ), intent(inout) ::      unew(:)
@@ -102,7 +102,8 @@ contains
        end do
     end do
 
-    call ml_restrict_and_fill(nlevs, unew, mla%mba%rr, the_bc_tower%bc_tower_array)
+    call ml_restrict_and_fill(nlevs, unew, mla%mba%rr, the_bc_tower%bc_tower_array, &
+                              dx_in=dx(1,:), prob_lo_in=prob_lo, prob_hi_in=prob_hi)
 
     if ( verbose .ge. 1 ) then
        do n = 1,nlevs

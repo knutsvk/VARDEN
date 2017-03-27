@@ -124,8 +124,8 @@ contains
 
     call mkgphi(nlevs,gphi,phi,dx)
 
-    call hg_update(mla,proj_type,unew,uold,gp,gphi,rhohalf,  &
-                   p,phi,dt,the_bc_tower%bc_tower_array)
+    call hg_update(mla, proj_type, unew, uold, gp, gphi, rhohalf, p, phi, dx, dt, &
+                   the_bc_tower%bc_tower_array)
 
     if (verbose .ge. 1) then
        umin = 1.d30
@@ -272,7 +272,10 @@ contains
 
     !   ********************************************************************************** !
 
-    subroutine hg_update(mla,proj_type,unew,uold,gp,gphi,rhohalf,p,phi,dt,the_bc_level)
+    subroutine hg_update(mla, proj_type, unew, uold, gp, gphi, rhohalf, p, phi, dx, dt, &
+                         the_bc_level)
+
+       use probin_module, only: prob_lo, prob_hi
 
       type(ml_layout), intent(in   ) :: mla
       integer        , intent(in   ) :: proj_type
@@ -283,7 +286,7 @@ contains
       type(multifab) , intent(in   ) :: rhohalf(:)
       type(multifab) , intent(inout) :: p(:)
       type(multifab) , intent(in   ) :: phi(:)
-      real(kind=dp_t), intent(in   ) :: dt
+      real(kind=dp_t), intent(in   ) :: dx(:,:), dt
       type(bc_level) , intent(in   ) :: the_bc_level(:)
 
       ! local
@@ -348,7 +351,8 @@ contains
       end do
 
       if (nlevs > 1) then
-         call ml_restrict_and_fill(nlevs, unew, mla%mba%rr, the_bc_level)
+         call ml_restrict_and_fill(nlevs, unew, mla%mba%rr, the_bc_level, &
+                                   dx_in=dx(1,:), prob_lo_in=prob_lo, prob_hi_in=prob_hi)
       end if
 
       call destroy(bpt)

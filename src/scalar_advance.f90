@@ -90,7 +90,7 @@ contains
     !***********************************
 
     diff_fac = ONE
-    call mkscalforce(mla,scal_force,ext_scal_force,laps,diff_fac,the_bc_tower)
+    call mkscalforce(mla, scal_force, ext_scal_force, laps, diff_fac, dx, the_bc_tower)
 
     !***********************************
     ! Create edge state scalars/fluxes
@@ -106,7 +106,7 @@ contains
     ! The laps term will be added to the rhs in diff_scalar_solve
     ! for Crank-Nicolson
     diff_fac = ZERO
-    call mkscalforce(mla,scal_force,ext_scal_force,laps,diff_fac,the_bc_tower)
+    call mkscalforce(mla, scal_force, ext_scal_force, laps, diff_fac, dx, the_bc_tower)
 
     !***********************************
     ! Update the scalars with conservative or convective differencing.

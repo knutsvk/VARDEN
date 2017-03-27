@@ -15,17 +15,19 @@ contains
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  subroutine make_at_halftime(mla,rhohalf,sold,snew,in_comp,out_comp,the_bc_level)
+  subroutine make_at_halftime(mla, rhohalf, sold, snew, in_comp, out_comp, dx, the_bc_level)
 
     use multifab_physbc_module
     use ml_restrict_fill_module
+    use probin_module, only: prob_lo, prob_hi
 
+    type(ml_layout), intent(in   ) :: mla
     type(multifab) , intent(inout) :: rhohalf(:)
     type(multifab) , intent(in   ) :: sold(:)
     type(multifab) , intent(in   ) :: snew(:)
     integer        , intent(in   ) :: in_comp,out_comp
+    real(kind=dp_t), intent(in   ) :: dx(:,:)
     type(bc_level) , intent(in   ) :: the_bc_level(:)
-    type(ml_layout), intent(in   ) :: mla
 
     real(kind=dp_t), pointer:: rhp(:,:,:,:)
     real(kind=dp_t), pointer:: rop(:,:,:,:)
@@ -62,7 +64,8 @@ contains
     end do
 
     call ml_restrict_and_fill(nlevs, rhohalf, mla%mba%rr, the_bc_level, &
-         icomp=out_comp, bcomp=dm+in_comp, nc=1, ng=ng_h)
+                              icomp=out_comp, bcomp=dm+in_comp, nc=1, ng=ng_h, &
+                              dx_in=dx(1,:), prob_lo_in=prob_lo, prob_hi_in=prob_hi)
 
     call destroy(bpt)
 

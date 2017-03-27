@@ -15,9 +15,10 @@ module mkforce_module
 
 contains
 
-  subroutine mkvelforce(mla, vel_force, ext_vel_force, s, gp, lapu, viscosity, visc_fac, the_bc_tower)
+  subroutine mkvelforce(mla, vel_force, ext_vel_force, s, gp, lapu, viscosity, visc_fac, dx, &
+                        the_bc_tower)
 
-    use probin_module, only: extrap_comp
+    use probin_module, only: extrap_comp, prob_lo, prob_hi
 
     type(ml_layout), intent(in   ) :: mla
     type(multifab) , intent(inout) ::      vel_force(:)
@@ -26,7 +27,7 @@ contains
     type(multifab) , intent(in   ) ::             gp(:)
     type(multifab) , intent(in   ) ::           lapu(:)
     type(multifab) , intent(in   ) ::      viscosity(:)
-    real(kind=dp_t), intent(in   ) :: visc_fac
+    real(kind=dp_t), intent(in   ) :: visc_fac, dx(:,:)
     type(bc_tower) , intent(in   ) :: the_bc_tower
 
     ! local
@@ -76,7 +77,8 @@ contains
     enddo
 
     call ml_restrict_and_fill(nlevs, vel_force, mla%mba%rr, the_bc_tower%bc_tower_array, &
-         icomp=1,bcomp=extrap_comp,nc=dm,same_boundary=.true.)
+                              icomp=1, bcomp=extrap_comp, nc=dm, same_boundary=.true., &
+                              dx_in=dx(1,:), prob_lo_in=prob_lo, prob_hi_in=prob_hi)
 
     call destroy(bpt)
 
@@ -241,15 +243,15 @@ contains
 
   end subroutine mkvelforce_3d
 
-  subroutine mkscalforce(mla,scal_force,ext_scal_force,laps,diff_fac,the_bc_tower)
+  subroutine mkscalforce(mla, scal_force, ext_scal_force, laps, diff_fac, dx, the_bc_tower)
 
-    use probin_module, only: nscal,extrap_comp
+    use probin_module, only: nscal, extrap_comp, prob_lo, prob_hi
 
     type(ml_layout), intent(in   ) :: mla
     type(multifab) , intent(inout) :: scal_force(:)
     type(multifab) , intent(in   ) :: ext_scal_force(:)
     type(multifab) , intent(in   ) :: laps(:)
-    real(kind=dp_t), intent(in   ) :: diff_fac
+    real(kind=dp_t), intent(in   ) :: diff_fac, dx(:,:)
     type(bc_tower) , intent(in   ) :: the_bc_tower
 
     ! local
@@ -287,7 +289,8 @@ contains
     enddo
 
     call ml_restrict_and_fill(nlevs, scal_force, mla%mba%rr, the_bc_tower%bc_tower_array, &
-         icomp=1,bcomp=extrap_comp,nc=nscal,same_boundary=.true.)
+                              icomp=1, bcomp=extrap_comp, nc=nscal, same_boundary=.true., &
+                              dx_in=dx(1,:), prob_lo_in=prob_lo, prob_hi_in=prob_hi)
 
     call destroy(bpt)
 

@@ -14,20 +14,20 @@
  init_iter = 3
  do_initial_projection = 1
 
- max_step  = 100
- plot_int  = 1
+ max_step  = 10000
+ plot_int  = 1000
  chk_int   = -1
 
- stop_time = 10
+ stop_time = -1
  cflfac = 0.9
  init_shrink = 0.001
 
- visc_coef = 1
+ visc_coef = 0.01
  diff_coef = 0.0
 
  diffusion_type = 2
 
- yield_stress = 1
+ yield_stress = 0
  papa_reg = 0.0025
 
  grav = 0.0d0
@@ -35,7 +35,9 @@
  bcx_lo = 15
  bcx_hi = 15
  bcy_lo = 15
- bcy_hi = 18
+ bcy_hi = 15
+
+ u_bcy_hi = 1.0d0
 
  verbose = 0
  mg_verbose = 0

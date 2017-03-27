@@ -37,8 +37,6 @@
  bcy_lo = 15
  bcy_hi = 15
 
- u_bcy_hi = 1.0d0
-
  verbose = 0
  mg_verbose = 0
 

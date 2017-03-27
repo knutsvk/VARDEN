@@ -222,7 +222,7 @@ contains
              do j = 1, ng
                 do i = lo(1)-ng, hi(1)+ng
                    x = prob_lo(1) + (0.5d0 + i) * dx(1)
-                   s(i,hi(2)+j) = 16.0d0 * x * x * (1.0d0 - x * x)
+                   s(i,hi(2)+j) = 16.0d0 * x **2 * (1.0d0 - x)**2
                 end do
              end do
           else

@@ -32,7 +32,7 @@ contains
 
     ! local
     integer :: i, n, dm, nlevs, lo(mla%dim), hi(mla%dim)
-    integer :: ng_f, ng_e, ng_s, ng_g, ng_l
+    integer :: ng_f, ng_e, ng_s, ng_g, ng_l, ng_v
     real(kind=dp_t), pointer ::  fp(:,:,:,:)
     real(kind=dp_t), pointer ::  ep(:,:,:,:)
     real(kind=dp_t), pointer ::  lp(:,:,:,:)
@@ -51,6 +51,7 @@ contains
     ng_s = s(1)%ng
     ng_g = gp(1)%ng
     ng_l = lapu(1)%ng
+    ng_v = viscosity(1)%ng
 
     do n=1,nlevs
        call setval(vel_force(n),ZERO,all=.true.)
@@ -66,7 +67,7 @@ contains
           select case (dm)
           case (2)
              call mkvelforce_2d(fp(:,:,1,:), ep(:,:,1,:), gpp(:,:,1,:), sp(:,:,1,:), lp(:,:,1,:), &
-                                vp(:,:,1,1), ng_f, ng_e, ng_g, ng_s, ng_l, visc_fac, lo, hi)
+                                vp(:,:,1,1), ng_f, ng_e, ng_g, ng_s, ng_l, ng_v, visc_fac, lo, hi)
           case (3)
 ! TODO: 
 !             call mkvelforce_3d(fp(:,:,:,:), ep(:,:,:,:), gpp(:,:,:,:), &
@@ -85,17 +86,17 @@ contains
   end subroutine mkvelforce
 
   subroutine mkvelforce_2d(vel_force, ext_vel_force, gp, s, lapu, &
-                           viscosity, ng_f, ng_e, ng_g, ng_s, ng_l, visc_fac, lo, hi)
+                           viscosity, ng_f, ng_e, ng_g, ng_s, ng_l, ng_v, visc_fac, lo, hi)
 
     use probin_module, only: boussinesq
  
-    integer        , intent(in   ) :: lo(:), hi(:), ng_f, ng_e, ng_g, ng_s, ng_l
+    integer        , intent(in   ) :: lo(:), hi(:), ng_f, ng_e, ng_g, ng_s, ng_l, ng_v
     real(kind=dp_t), intent(  out) ::      vel_force(lo(1)-ng_f:,lo(2)-ng_f:,:)
     real(kind=dp_t), intent(in   ) ::  ext_vel_force(lo(1)-ng_e:,lo(2)-ng_e:,:)
     real(kind=dp_t), intent(in   ) ::             gp(lo(1)-ng_g:,lo(2)-ng_g:,:)
     real(kind=dp_t), intent(in   ) ::              s(lo(1)-ng_s:,lo(2)-ng_s:,:)
     real(kind=dp_t), intent(in   ) ::           lapu(lo(1)-ng_l:,lo(2)-ng_l:,:)
-    real(kind=dp_t), intent(in   ) ::      viscosity(lo(1)     :,lo(2)     :)
+    real(kind=dp_t), intent(in   ) ::      viscosity(lo(1)-ng_v:,lo(2)-ng_v:)
     real(kind=dp_t), intent(in   ) :: visc_fac
 
     real(kind=dp_t) :: lapu_local(2)
@@ -125,22 +126,22 @@ contains
 
        ! we use 0th order extrapolation for laplacian and viscosity in ghost cells
        do j = lo(2), hi(2)
-          lapu_local(1:2) = viscosity(lo(1),j) * visc_fac * lapu(lo(1),j,1:2)
+          lapu_local(1:2) = viscosity(lo(1)-1,j) * visc_fac * lapu(lo(1),j,1:2)
           vel_force(lo(1)-1,j,1:2) = ext_vel_force(lo(1)-1,j,1:2) + &
                (lapu_local(1:2) - gp(lo(1)-1,j,1:2)) / s(lo(1)-1,j,1)
        enddo
        do j = lo(2), hi(2)
-          lapu_local(1:2) = viscosity(hi(1),j) * visc_fac * lapu(hi(1),j,1:2)
+          lapu_local(1:2) = viscosity(hi(1)+1,j) * visc_fac * lapu(hi(1),j,1:2)
           vel_force(hi(1)+1,j,1:2) = ext_vel_force(hi(1)+1,j,1:2) + &
                (lapu_local(1:2) - gp(hi(1)+1,j,1:2)) / s(hi(1)+1,j,1)
        enddo
        do i = lo(1), hi(1)
-          lapu_local(1:2) = viscosity(i,lo(2)) * visc_fac * lapu(i,lo(2),1:2)
+          lapu_local(1:2) = viscosity(i,lo(2)-1) * visc_fac * lapu(i,lo(2),1:2)
           vel_force(i,lo(2)-1,1:2) = ext_vel_force(i,lo(2)-1,1:2) + &
                (lapu_local(1:2) - gp(i,lo(2)-1,1:2)) / s(i,lo(2)-1,1)
        enddo
        do i = lo(1), hi(1)
-          lapu_local(1:2) = viscosity(i,hi(2)) * visc_fac * lapu(i,hi(2),1:2)
+          lapu_local(1:2) = viscosity(i,hi(2)+1) * visc_fac * lapu(i,hi(2),1:2)
           vel_force(i,hi(2)+1,1:2) = ext_vel_force(i,hi(2)+1,1:2) + &
                (lapu_local(1:2) - gp(i,hi(2)+1,1:2)) / s(i,hi(2)+1,1)
        enddo

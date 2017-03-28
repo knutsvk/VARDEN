@@ -23,8 +23,8 @@ module advance_module
 contains
 
   subroutine advance_timestep(istep, mla, sold, uold, snew, unew, gp, p, ext_vel_force, &
-                              ext_scal_force, lapu, viscosity, the_bc_tower, dt, time, dx, &
-                              press_comp, proj_type)
+                              ext_scal_force, lapu, viscosity, visc_grad_term, the_bc_tower, dt, &
+                              time, dx, press_comp, proj_type)
 
     implicit none
 
@@ -40,6 +40,7 @@ contains
     type(multifab) , intent(inout) :: ext_scal_force(:)
     type(multifab) , intent(inout) ::           lapu(:)
     type(multifab) , intent(inout) ::      viscosity(:)
+    type(multifab) , intent(inout) :: visc_grad_term(:)
     real(dp_t)     , intent(in   ) :: dt, time, dx(:,:)
     type(bc_tower) , intent(in   ) :: the_bc_tower
     integer        , intent(in   ) :: press_comp
@@ -75,8 +76,8 @@ contains
 
     if ( verbose .ge. 1 ) call print_old(uold, proj_type, time, istep)
 
-    call advance_premac(mla, uold, sold, lapu, umac, gp, ext_vel_force, viscosity, dx, dt, &
-                        the_bc_tower)
+    call advance_premac(mla, uold, sold, lapu, umac, gp, ext_vel_force, viscosity, &
+                        visc_grad_term, dx, dt, the_bc_tower)
 
     mac_time_start = parallel_wtime()
 
@@ -105,7 +106,7 @@ contains
     va_time_start = parallel_wtime()
     call build(bpt_v, "Velocity_update")
     call velocity_advance(mla, uold, unew, sold, lapu, rhohalf, umac, gp,  ext_vel_force, &
-                          viscosity, dx, dt, the_bc_tower)
+                          viscosity, visc_grad_term, dx, dt, the_bc_tower)
     call destroy(bpt_v)
     call parallel_barrier()
     va_time = parallel_wtime() - va_time_start

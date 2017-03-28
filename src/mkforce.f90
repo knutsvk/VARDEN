@@ -70,7 +70,7 @@ contains
           select case (dm)
           case (2)
              call mkvelforce_2d(fp(:,:,1,:), ep(:,:,1,:), gpp(:,:,1,:), sp(:,:,1,:), lp(:,:,1,:), &
-                                vp(:,:,1,1), vgp(:,:,1,:), ng_f, ng_e, ng_g, ng_s, ng_l, &
+                                vp(:,:,1,1), vgp(:,:,1,:), ng_f, ng_e, ng_g, ng_s, ng_l, ng_v, &
                                 visc_fac, lo, hi)
           case (3)
 ! TODO: 

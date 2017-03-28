@@ -105,53 +105,61 @@ contains
        enddo
     enddo
 
-!    if ( bc(1,1) == NO_SLIP_WALL ) then
-!       i = lo(1)
-!       do j = lo(2), hi(2)
-!          ux = TWO * (u(i,j,1) - u_bcx_lo) / dx(1)
-!          vx = TWO * (u(i,j,2) - v_bcx_lo) / dx(1)
-!          uy = (u(i,j+1,1) - u(i,j-1,1)) / (TWO * dx(2))
-!          vy = (u(i,j+1,2) - u(i,j-1,2)) / (TWO * dx(2))
-!          visc_grad_term(i,j,1) = TWO * viscx * ux + viscy * (uy + vx)
-!          visc_grad_term(i,j,2) = TWO * viscy * vy + viscx * (uy + vx)
-!       enddo
-!    endif
-!
-!    if ( bc(1,2) == NO_SLIP_WALL ) then
-!       i = hi(1)
-!       do j = lo(2), hi(2)
-!          ux = -TWO * (u(i,j,1) - u_bcx_hi) / dx(1)
-!          vx = -TWO * (u(i,j,2) - v_bcx_hi) / dx(1)
-!          uy = (u(i,j+1,1) - u(i,j-1,1)) / (TWO * dx(2))
-!          vy = (u(i,j+1,2) - u(i,j-1,2)) / (TWO * dx(2))
-!          visc_grad_term(i,j,1) = TWO * viscx * ux + viscy * (uy + vx)
-!          visc_grad_term(i,j,2) = TWO * viscy * vy + viscx * (uy + vx)
-!       enddo
-!    endif
-!
-!    if ( bc(2,1) == NO_SLIP_WALL ) then
-!       j = lo(2)
-!       do i = lo(1), hi(1)
-!          ux = (u(i+1,j,1) - u(i-1,j,1)) / (TWO * dx(1))
-!          vx = (u(i+1,j,2) - u(i-1,j,2)) / (TWO * dx(1))
-!          uy = TWO * (u(i,j,1) - u_bcy_lo) / dx(2)
-!          vy = TWO * (u(i,j,2) - v_bcy_lo) / dx(2)
-!          visc_grad_term(i,j,1) = TWO * viscx * ux + viscy * (uy + vx)
-!          visc_grad_term(i,j,2) = TWO * viscy * vy + viscx * (uy + vx)
-!       enddo
-!    endif
-!
-!    if ( bc(2,2) == NO_SLIP_WALL ) then
-!       j = hi(2)
-!       do i = lo(1), hi(1)
-!          ux = (u(i+1,j,1) - u(i-1,j,1)) / (TWO * dx(1))
-!          vx = (u(i+1,j,2) - u(i-1,j,2)) / (TWO * dx(1))
-!          uy = -TWO * (u(i,j,1) - u_bcy_hi) / dx(2)
-!          vy = -TWO * (u(i,j,2) - v_bcy_hi) / dx(2)
-!          visc_grad_term(i,j,1) = TWO * viscx * ux + viscy * (uy + vx)
-!          visc_grad_term(i,j,2) = TWO * viscy * vy + viscx * (uy + vx)
-!       enddo
-!    endif
+    if ( bc(1,1) == NO_SLIP_WALL ) then
+       i = lo(1)
+       do j = lo(2), hi(2)
+          ux = TWO * (u(i,j,1) - u_bcx_lo) / dx(1)
+          vx = TWO * (u(i,j,2) - v_bcx_lo) / dx(1)
+          uy = (u(i,j+1,1) - u(i,j-1,1)) / (TWO * dx(2))
+          vy = (u(i,j+1,2) - u(i,j-1,2)) / (TWO * dx(2))
+          viscx = (viscosity(i+1,j) - viscosity(i-1,j)) / (TWO * dx(1))
+          viscy = (viscosity(i,j+1) - viscosity(i,j-1)) / (TWO * dx(2))
+          visc_grad_term(i,j,1) = TWO * viscx * ux + viscy * (uy + vx)
+          visc_grad_term(i,j,2) = TWO * viscy * vy + viscx * (uy + vx)
+       enddo
+    endif
+
+    if ( bc(1,2) == NO_SLIP_WALL ) then
+       i = hi(1)
+       do j = lo(2), hi(2)
+          ux = -TWO * (u(i,j,1) - u_bcx_hi) / dx(1)
+          vx = -TWO * (u(i,j,2) - v_bcx_hi) / dx(1)
+          uy = (u(i,j+1,1) - u(i,j-1,1)) / (TWO * dx(2))
+          vy = (u(i,j+1,2) - u(i,j-1,2)) / (TWO * dx(2))
+          viscx = (viscosity(i+1,j) - viscosity(i-1,j)) / (TWO * dx(1))
+          viscy = (viscosity(i,j+1) - viscosity(i,j-1)) / (TWO * dx(2))
+          visc_grad_term(i,j,1) = TWO * viscx * ux + viscy * (uy + vx)
+          visc_grad_term(i,j,2) = TWO * viscy * vy + viscx * (uy + vx)
+       enddo
+    endif
+
+    if ( bc(2,1) == NO_SLIP_WALL ) then
+       j = lo(2)
+       do i = lo(1), hi(1)
+          ux = (u(i+1,j,1) - u(i-1,j,1)) / (TWO * dx(1))
+          vx = (u(i+1,j,2) - u(i-1,j,2)) / (TWO * dx(1))
+          uy = TWO * (u(i,j,1) - u_bcy_lo) / dx(2)
+          vy = TWO * (u(i,j,2) - v_bcy_lo) / dx(2)
+          viscx = (viscosity(i+1,j) - viscosity(i-1,j)) / (TWO * dx(1))
+          viscy = (viscosity(i,j+1) - viscosity(i,j-1)) / (TWO * dx(2))
+          visc_grad_term(i,j,1) = TWO * viscx * ux + viscy * (uy + vx)
+          visc_grad_term(i,j,2) = TWO * viscy * vy + viscx * (uy + vx)
+       enddo
+    endif
+
+    if ( bc(2,2) == NO_SLIP_WALL ) then
+       j = hi(2)
+       do i = lo(1), hi(1)
+          ux = (u(i+1,j,1) - u(i-1,j,1)) / (TWO * dx(1))
+          vx = (u(i+1,j,2) - u(i-1,j,2)) / (TWO * dx(1))
+          uy = -TWO * (u(i,j,1) - u_bcy_hi) / dx(2)
+          vy = -TWO * (u(i,j,2) - v_bcy_hi) / dx(2)
+          viscx = (viscosity(i+1,j) - viscosity(i-1,j)) / (TWO * dx(1))
+          viscy = (viscosity(i,j+1) - viscosity(i,j-1)) / (TWO * dx(2))
+          visc_grad_term(i,j,1) = TWO * viscx * ux + viscy * (uy + vx)
+          visc_grad_term(i,j,2) = TWO * viscy * vy + viscx * (uy + vx)
+       enddo
+    endif
 
   end subroutine update_viscgrad_2d
 

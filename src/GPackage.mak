@@ -38,3 +38,4 @@ f90sources += build_info.f90
 f90sources += strainrate.f90
 f90sources += viscosity.f90
 f90sources += stress.f90
+f90sources += viscgrad.f90

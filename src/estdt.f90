@@ -12,7 +12,7 @@ module estdt_module
 
 contains
 
-  subroutine estdt (lev, u, s, gp, ext_vel_force, lapu, viscosity, dx, dtold, dt)
+  subroutine estdt (lev, u, s, gp, ext_vel_force, lapu, viscosity, visc_grad_term, dx, dtold, dt)
 
     use probin_module, only: max_dt_growth, cflfac
 
@@ -23,6 +23,7 @@ contains
     type(multifab) , intent( in) :: ext_vel_force
     type(multifab) , intent( in) :: lapu
     type(multifab) , intent( in) :: viscosity
+    type(multifab) , intent( in) :: visc_grad_term
     real(kind=dp_t), intent( in) :: dx(:)
     real(kind=dp_t), intent( in) :: dtold
     real(kind=dp_t), intent(out) :: dt
@@ -30,8 +31,9 @@ contains
     real(kind=dp_t), pointer::  up(:,:,:,:), sp(:,:,:,:)
     real(kind=dp_t), pointer:: gpp(:,:,:,:), fp(:,:,:,:)
     real(kind=dp_t), pointer::  lp(:,:,:,:), vp(:,:,:,:)
+    real(kind=dp_t), pointer:: vgp(:,:,:,:)
     integer :: lo(get_dim(u)), hi(get_dim(u)), dm
-    integer :: ng_u, ng_s, ng_g, ng_f, ng_l, ng_v
+    integer :: ng_u, ng_s, ng_g, ng_f, ng_l, ng_v, ng_vg
     integer :: i
     real(kind=dp_t) :: dt_proc, dt_grid, dt_start
 
@@ -41,12 +43,13 @@ contains
 
     dm = get_dim(u)
 
-    ng_u = u%ng
-    ng_s = s%ng
-    ng_g = gp%ng
-    ng_f = ext_vel_force%ng
-    ng_l = lapu%ng
-    ng_v = viscosity%ng
+    ng_u  =              u%ng
+    ng_s  =              s%ng
+    ng_g  =             gp%ng
+    ng_f  =  ext_vel_force%ng
+    ng_l  =           lapu%ng
+    ng_v  =      viscosity%ng
+    ng_vg = visc_grad_term%ng
 
     dt_proc  = 1.d20
     dt_start = 1.d20
@@ -58,6 +61,7 @@ contains
        fp  => dataptr(ext_vel_force, i)
        lp  => dataptr(lapu, i)
        vp  => dataptr(viscosity, i)
+       vgp => dataptr(visc_grad_term, i)
        lo = lwb(get_box(u, i))
        hi = upb(get_box(u, i))
 
@@ -65,7 +69,8 @@ contains
        select case (dm)
        case (2)
           call estdt_2d(up(:,:,1,:), ng_u, sp(:,:,1,1), ng_s, gpp(:,:,1,:), ng_g, fp(:,:,1,:), &
-                        ng_f, lp(:,:,1,:), ng_l, vp(:,:,1,1), ng_v, lo, hi, dx, dt_grid)
+                        ng_f, lp(:,:,1,:), ng_l, vp(:,:,1,1), ng_v, vgp(:,:,1,:), ng_vg, &
+                        lo, hi, dx, dt_grid)
        case (3)
           call estdt_3d(up(:,:,:,:), ng_u, sp(:,:,:,1), ng_s, gpp(:,:,:,:), ng_g, fp(:,:,:,:), &
                         ng_f, lp(:,:,:,:), ng_l, vp(:,:,:,1), ng_v, lo, hi, dx, dt_grid)
@@ -96,15 +101,16 @@ contains
   end subroutine estdt
 
   subroutine estdt_2d(u, ng_u, s, ng_s, gp, ng_g, ext_vel_force, ng_f, lapu, ng_l, &
-                      viscosity, ng_v, lo, hi, dx, dt)
+                      viscosity, ng_v, visc_grad_term, ng_vg, lo, hi, dx, dt)
 
-    integer, intent(in) :: lo(:), hi(:), ng_u, ng_s, ng_g, ng_f, ng_l, ng_v
-    real (kind = dp_t), intent(in   ) ::             u(lo(1)-ng_u:,lo(2)-ng_u:,:)  
-    real (kind = dp_t), intent(in   ) ::             s(lo(1)-ng_s:,lo(2)-ng_s:)  
-    real (kind = dp_t), intent(in   ) ::            gp(lo(1)-ng_g:,lo(2)-ng_g:,:)  
-    real (kind = dp_t), intent(in   ) :: ext_vel_force(lo(1)-ng_f:,lo(2)-ng_f:,:)  
-    real (kind = dp_t), intent(in   ) ::          lapu(lo(1)-ng_l:,lo(2)-ng_l:,:)  
-    real (kind = dp_t), intent(in   ) ::     viscosity(lo(1)-ng_v:,lo(2)-ng_v:)  
+    integer, intent(in) :: lo(:), hi(:), ng_u, ng_s, ng_g, ng_f, ng_l, ng_v, ng_vg
+    real (kind = dp_t), intent(in   ) ::              u(lo(1)-ng_u: ,lo(2)-ng_u: ,:)  
+    real (kind = dp_t), intent(in   ) ::              s(lo(1)-ng_s: ,lo(2)-ng_s:   )  
+    real (kind = dp_t), intent(in   ) ::             gp(lo(1)-ng_g: ,lo(2)-ng_g: ,:)  
+    real (kind = dp_t), intent(in   ) ::  ext_vel_force(lo(1)-ng_f: ,lo(2)-ng_f: ,:)  
+    real (kind = dp_t), intent(in   ) ::           lapu(lo(1)-ng_l: ,lo(2)-ng_l: ,:)  
+    real (kind = dp_t), intent(in   ) ::      viscosity(lo(1)-ng_v: ,lo(2)-ng_v:   )  
+    real (kind = dp_t), intent(in   ) :: visc_grad_term(lo(1)-ng_vg:,lo(2)-ng_vg:,:)  
     real (kind = dp_t), intent(in   ) :: dx(:)
     real (kind = dp_t), intent(inout) :: dt
 
@@ -124,8 +130,10 @@ contains
        do i = lo(1), hi(1)
           u_max  = max(u_max , abs(u(i,j,1)))
           v_max  = max(v_max , abs(u(i,j,2)))
-          fx = (viscosity(i,j) * lapu(i,j,1) - gp(i,j,1)) / s(i,j) + ext_vel_force(i,j,1)
-          fy = (viscosity(i,j) * lapu(i,j,2) - gp(i,j,2)) / s(i,j) + ext_vel_force(i,j,2)
+          fx = (viscosity(i,j) * lapu(i,j,1) + visc_grad_term(i,j,1) - gp(i,j,1)) / s(i,j) &
+             + ext_vel_force(i,j,1)
+          fy = (viscosity(i,j) * lapu(i,j,2) + visc_grad_term(i,j,2) - gp(i,j,2)) / s(i,j) &
+             + ext_vel_force(i,j,2)
           fx_max = max(fx_max, abs(fx))
           fy_max=  max(fy_max, abs(fy))
        enddo  

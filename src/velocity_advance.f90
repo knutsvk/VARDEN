@@ -15,7 +15,7 @@ module velocity_advance_module
 contains
 
   subroutine velocity_advance(mla, uold, unew, sold, lapu, rhohalf, umac, gp, ext_vel_force, &
-                              viscosity, dx, dt, the_bc_tower)
+                              viscosity, visc_grad_term, dx, dt, the_bc_tower)
 
     use viscous_module, only : visc_solve
     use mkflux_module , only : mkflux
@@ -33,6 +33,7 @@ contains
     type(multifab) , intent(in   ) ::             gp(:)
     type(multifab) , intent(in   ) ::  ext_vel_force(:)
     type(multifab) , intent(inout) ::      viscosity(:)
+    type(multifab) , intent(inout) :: visc_grad_term(:)
     real(kind=dp_t), intent(in   ) :: dx(:,:), dt
     type(bc_tower) , intent(in   ) :: the_bc_tower
 
@@ -67,8 +68,8 @@ contains
     !********************************************************
 
     visc_fac = ONE
-    call mkvelforce(mla, vel_force, ext_vel_force, sold, gp, lapu, viscosity, visc_fac, dx, &
-                    the_bc_tower)
+    call mkvelforce(mla, vel_force, ext_vel_force, sold, gp, lapu, viscosity, visc_grad_term, &
+                    visc_fac, dx, the_bc_tower)
 
     !********************************************************
     ! Create the edge state velocities
@@ -84,8 +85,8 @@ contains
     ! The lapu term will be added to the rhs in visc_solve
     ! for Crank-Nicolson
     visc_fac = ZERO
-    call mkvelforce(mla, vel_force, ext_vel_force, rhohalf, gp, lapu, viscosity, visc_fac, dx, &
-                    the_bc_tower)
+    call mkvelforce(mla, vel_force, ext_vel_force, rhohalf, gp, lapu, viscosity, visc_grad_term, &
+                    visc_fac, dx, the_bc_tower)
 
     !********************************************************
     ! Update the velocity with convective differencing

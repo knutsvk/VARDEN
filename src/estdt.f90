@@ -130,9 +130,9 @@ contains
        do i = lo(1), hi(1)
           u_max  = max(u_max , abs(u(i,j,1)))
           v_max  = max(v_max , abs(u(i,j,2)))
-          fx = (viscosity(i,j) * lapu(i,j,1) + visc_grad_term(i,j,1) - gp(i,j,1)) / s(i,j) &
+          fx = (viscosity(i,j) * lapu(i,j,1) + 0.0d0 * visc_grad_term(i,j,1) - gp(i,j,1)) / s(i,j) &
              + ext_vel_force(i,j,1)
-          fy = (viscosity(i,j) * lapu(i,j,2) + visc_grad_term(i,j,2) - gp(i,j,2)) / s(i,j) &
+          fy = (viscosity(i,j) * lapu(i,j,2) + 0.0d0 * visc_grad_term(i,j,2) - gp(i,j,2)) / s(i,j) &
              + ext_vel_force(i,j,2)
           fx_max = max(fx_max, abs(fx))
           fy_max=  max(fy_max, abs(fy))

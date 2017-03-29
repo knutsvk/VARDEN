@@ -84,7 +84,7 @@ subroutine varden()
   ! Set up plot_names for writing plot files.
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  allocate(plot_names(2*dm+nscal+5))
+  allocate(plot_names(3*dm+nscal+5))
 
   plot_names(1) = "x_vel"
   plot_names(2) = "y_vel"
@@ -99,6 +99,9 @@ subroutine varden()
   plot_names(dm+nscal+6) = "gpx"
   plot_names(dm+nscal+7) = "gpy"
   if (dm > 2) plot_names(dm+nscal+8) = "gpz"
+  plot_names(2*dm+nscal+6) = "gradviscx"
+  plot_names(2*dm+nscal+7) = "gradviscy"
+  if (dm > 2) plot_names(2*dm+nscal+8) = "gradviscz"
 
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -561,7 +564,7 @@ contains
 
     integer                 :: n, n_plot_comps
     integer                 :: mvel_comp, vort_comp, gpx_comp
-    integer                 :: strainrate_comp, viscosity_comp, stress_comp
+    integer                 :: strainrate_comp, viscosity_comp, stress_comp, gviscx_comp
     logical                 :: coarsen_plot_data
  
     ! These are only used if you want to coarsen your plotdata before writing
@@ -585,7 +588,7 @@ contains
 
     allocate(plotdata(nlevs))
 
-    n_plot_comps = 2 * dm + nscal + 5
+    n_plot_comps = 3 * dm + nscal + 5
 
     do n = 1, nlevs
        call multifab_build(plotdata(n), mla%la(n), n_plot_comps, 0)
@@ -610,6 +613,9 @@ contains
 
        gpx_comp = stress_comp + 1
        call multifab_copy_c(plotdata(n), gpx_comp, gp(n), 1, dm)
+
+       gviscx_comp = stress_comp + 1 + dm
+       call multifab_copy_c(plotdata(n), gviscx_comp, visc_grad_term(n), 1, dm)
     end do
 
     write(unit=plot_index,fmt='(i5.5)') istep_to_write

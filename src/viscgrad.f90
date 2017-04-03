@@ -141,7 +141,7 @@ contains
           uy = TWO * (u(i,j,1) - u_bcy_lo) / dx(2)
           vy = TWO * (u(i,j,2) - v_bcy_lo) / dx(2)
           viscx = (viscosity(i+1,j) - viscosity(i-1,j)) / (TWO * dx(1))
-          viscy = -(THREE * viscosity(i,j) - FOUR * viscosity(i,j+1) + viscosity(i,j+1)) / (TWO * dx(2))
+          viscy = -(THREE * viscosity(i,j) - FOUR * viscosity(i,j+1) + viscosity(i,j+2)) / (TWO * dx(2))
           visc_grad_term(i,j,1) = TWO * viscx * ux + viscy * (uy + vx)
           visc_grad_term(i,j,2) = TWO * viscy * vy + viscx * (uy + vx)
        enddo
@@ -155,7 +155,7 @@ contains
           uy = -TWO * (u(i,j,1) - u_bcy_hi) / dx(2)
           vy = -TWO * (u(i,j,2) - v_bcy_hi) / dx(2)
           viscx = (viscosity(i+1,j) - viscosity(i-1,j)) / (TWO * dx(1))
-          viscy = (THREE * viscosity(i,j) - FOUR * viscosity(i,j-1) + viscosity(i,j-1)) / (TWO * dx(2))
+          viscy = (THREE * viscosity(i,j) - FOUR * viscosity(i,j-1) + viscosity(i,j-2)) / (TWO * dx(2))
           visc_grad_term(i,j,1) = TWO * viscx * ux + viscy * (uy + vx)
           visc_grad_term(i,j,2) = TWO * viscy * vy + viscx * (uy + vx)
        enddo

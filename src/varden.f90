@@ -84,7 +84,7 @@ subroutine varden()
   ! Set up plot_names for writing plot files.
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  allocate(plot_names(3*dm+nscal+5))
+  allocate(plot_names(3*dm+nscal+7))
 
   plot_names(1) = "x_vel"
   plot_names(2) = "y_vel"
@@ -95,13 +95,15 @@ subroutine varden()
   plot_names(dm+nscal+2) = "vort"
   plot_names(dm+nscal+3) = "strainrate"
   plot_names(dm+nscal+4) = "viscosity"
-  plot_names(dm+nscal+5) = "stress"
-  plot_names(dm+nscal+6) = "gpx"
-  plot_names(dm+nscal+7) = "gpy"
-  if (dm > 2) plot_names(dm+nscal+8) = "gpz"
-  plot_names(2*dm+nscal+6) = "gradviscx"
-  plot_names(2*dm+nscal+7) = "gradviscy"
-  if (dm > 2) plot_names(2*dm+nscal+8) = "gradviscz"
+  plot_names(dm+nscal+5) = "lapu"
+  plot_names(dm+nscal+6) = "stress"
+  plot_names(dm+nscal+7) = "pressure"
+  plot_names(dm+nscal+8) = "gpx"
+  plot_names(dm+nscal+9) = "gpy"
+  if (dm > 2) plot_names(dm+nscal+10) = "gpz"
+  plot_names(2*dm+nscal+8) = "gradviscx"
+  plot_names(2*dm+nscal+9) = "gradviscy"
+  if (dm > 2) plot_names(2*dm+nscal+10) = "gradviscz"
 
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -564,7 +566,7 @@ contains
 
     integer                 :: n, n_plot_comps
     integer                 :: mvel_comp, vort_comp, gpx_comp
-    integer                 :: strainrate_comp, viscosity_comp, stress_comp, gviscx_comp
+    integer                 :: strainrate_comp, viscosity_comp, lapu_comp, stress_comp, press_comp, gviscx_comp
     logical                 :: coarsen_plot_data
  
     ! These are only used if you want to coarsen your plotdata before writing
@@ -588,7 +590,7 @@ contains
 
     allocate(plotdata(nlevs))
 
-    n_plot_comps = 3 * dm + nscal + 5
+    n_plot_comps = 3 * dm + nscal + 7
 
     do n = 1, nlevs
        call multifab_build(plotdata(n), mla%la(n), n_plot_comps, 0)
@@ -608,13 +610,19 @@ contains
        viscosity_comp = strainrate_comp + 1
        call multifab_copy_c(plotdata(n), viscosity_comp, viscosity(n), 1, 1)
 
-       stress_comp = viscosity_comp + 1
+       lapu_comp = viscosity_comp + 1
+       call multifab_copy_c(plotdata(n), lapu_comp, lapu(n), 1, 1)
+
+       stress_comp = lapu_comp + 1
        call multifab_copy_c(plotdata(n), stress_comp, stress_old(n), 1, 1)
 
-       gpx_comp = stress_comp + 1
+       press_comp = stress_comp + 1
+       call multifab_copy_c(plotdata(n), press_comp, p(n), 1, 1)
+
+       gpx_comp = press_comp + 1
        call multifab_copy_c(plotdata(n), gpx_comp, gp(n), 1, dm)
 
-       gviscx_comp = stress_comp + 1 + dm
+       gviscx_comp = press_comp + 1 + dm
        call multifab_copy_c(plotdata(n), gviscx_comp, visc_grad_term(n), 1, dm)
     end do
 

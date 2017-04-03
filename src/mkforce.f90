@@ -123,32 +123,37 @@ contains
 
        do j = lo(2), hi(2)
           do i = lo(1), hi(1)
-             lapu_local(1:2) = viscosity(i,j) * visc_fac * lapu(i,j,1:2)
+             lapu_local(1:2) = viscosity(i,j) * visc_fac * lapu(i,j,1:2) + &
+                visc_grad_term(i,j,1:2)
              vel_force(i,j,1:2) = vel_force(i,j,1:2) + &
-                (lapu_local(1:2) + 0.0d0 * visc_grad_term(i,j,1:2) - gp(i,j,1:2)) / s(i,j,1)
+                (lapu_local(1:2) - gp(i,j,1:2)) / s(i,j,1)
           end do
        end do
 
        ! we use 0th order extrapolation for laplacian and viscous terms in ghost cells
        do j = lo(2), hi(2)
-          lapu_local(1:2) = viscosity(lo(1)-1,j) * visc_fac * lapu(lo(1),j,1:2)
+          lapu_local(1:2) = viscosity(lo(1)-1,j) * visc_fac * lapu(lo(1),j,1:2) + &
+             visc_grad_term(lo(1),j,1:2)
           vel_force(lo(1)-1,j,1:2) = ext_vel_force(lo(1)-1,j,1:2) + &
-               (lapu_local(1:2) + 0.0d0 * visc_grad_term(lo(1),j,1:2) - gp(lo(1)-1,j,1:2)) / s(lo(1)-1,j,1)
+               (lapu_local(1:2) - gp(lo(1)-1,j,1:2)) / s(lo(1)-1,j,1)
        enddo
        do j = lo(2), hi(2)
-          lapu_local(1:2) = viscosity(hi(1)+1,j) * visc_fac * lapu(hi(1),j,1:2)
+          lapu_local(1:2) = viscosity(hi(1)+1,j) * visc_fac * lapu(hi(1),j,1:2) + &
+             visc_grad_term(hi(1),j,1:2)
           vel_force(hi(1)+1,j,1:2) = ext_vel_force(hi(1)+1,j,1:2) + &
-               (lapu_local(1:2) + 0.0d0 * visc_grad_term(hi(1),j,1:2) - gp(hi(1)+1,j,1:2)) / s(hi(1)+1,j,1)
+               (lapu_local(1:2) - gp(hi(1)+1,j,1:2)) / s(hi(1)+1,j,1)
        enddo
        do i = lo(1), hi(1)
-          lapu_local(1:2) = viscosity(i,lo(2)-1) * visc_fac * lapu(i,lo(2),1:2)
+          lapu_local(1:2) = viscosity(i,lo(2)-1) * visc_fac * lapu(i,lo(2),1:2) + &
+             visc_grad_term(i,lo(2),1:2)
           vel_force(i,lo(2)-1,1:2) = ext_vel_force(i,lo(2)-1,1:2) + &
-               (lapu_local(1:2) + 0.0d0 * visc_grad_term(i,lo(2),1:2) - gp(i,lo(2)-1,1:2)) / s(i,lo(2)-1,1)
+               (lapu_local(1:2) - gp(i,lo(2)-1,1:2)) / s(i,lo(2)-1,1)
        enddo
        do i = lo(1), hi(1)
-          lapu_local(1:2) = viscosity(i,hi(2)+1) * visc_fac * lapu(i,hi(2),1:2)
+          lapu_local(1:2) = viscosity(i,hi(2)+1) * visc_fac * lapu(i,hi(2),1:2) + &
+             visc_grad_term(i,hi(2),1:2)
           vel_force(i,hi(2)+1,1:2) = ext_vel_force(i,hi(2)+1,1:2) + &
-               (lapu_local(1:2) + 0.0d0 * visc_grad_term(i,hi(2),1:2) - gp(i,hi(2)+1,1:2)) / s(i,hi(2)+1,1)
+               (lapu_local(1:2) - gp(i,hi(2)+1,1:2)) / s(i,hi(2)+1,1)
        enddo
 
 

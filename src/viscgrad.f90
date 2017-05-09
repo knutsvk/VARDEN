@@ -100,8 +100,8 @@ contains
           vy = (u(i,j+1,2) - u(i,j-1,2)) / (TWO * dx(2))
           viscx = (viscosity(i+1,j) - viscosity(i-1,j)) / (TWO * dx(1))
           viscy = (viscosity(i,j+1) - viscosity(i,j-1)) / (TWO * dx(2))
-          visc_grad_term(i,j,1) = TWO * viscx * ux + viscy * (uy + vx)
-          visc_grad_term(i,j,2) = TWO * viscy * vy + viscx * (uy + vx)
+          visc_grad_term(i,j,1) = viscx * ux + HALF * viscy * (uy + vx)
+          visc_grad_term(i,j,2) = viscy * vy + HALF * viscx * (uy + vx)
        enddo
     enddo
 

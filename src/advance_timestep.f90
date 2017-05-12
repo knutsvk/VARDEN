@@ -97,11 +97,11 @@ contains
 
     call make_at_halftime(mla, rhohalf, sold, snew, 1, 1, dx, the_bc_tower%bc_tower_array)
 
-    !if ( diffusion_type .eq. 2 ) then
-    !   do n = 1, nlevs
-    !      call setval(lapu(n), 0.0d0)
-    !   enddo
-    !end if
+    if ( diffusion_type .eq. 2 ) then
+       do n = 1, nlevs
+          call setval(lapu(n), 0.0d0)
+       enddo
+    end if
 
     va_time_start = parallel_wtime()
     call build(bpt_v, "Velocity_update")

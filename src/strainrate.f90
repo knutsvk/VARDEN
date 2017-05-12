@@ -91,7 +91,7 @@ contains
           vx = (u(i+1,j,2) - u(i-1,j,2)) / (TWO * dx(1))
           uy = (u(i,j+1,1) - u(i,j-1,1)) / (TWO * dx(2))
           vy = (u(i,j+1,2) - u(i,j-1,2)) / (TWO * dx(2))
-          strain_rate(i,j) = sqrt((ux**2 + vy**2) + HALF * (uy + vx)**2) + 1e-3
+          strain_rate(i,j) = sqrt(ux**2 + vy**2 + HALF * (uy + vx)**2) + 1e-6
        enddo
     enddo
 
@@ -102,7 +102,7 @@ contains
           vx = TWO * (u(i,j,2) - v_bcx_lo) / dx(1)
           uy = (u(i,j+1,1) - u(i,j-1,1)) / (TWO * dx(2))
           vy = (u(i,j+1,2) - u(i,j-1,2)) / (TWO * dx(2))
-          strain_rate(i,j) = sqrt((ux**2 + vy**2) + HALF * (uy + vx)**2) + 1e-3
+          strain_rate(i,j) = sqrt(ux**2 + vy**2 + HALF * (uy + vx)**2) + 1e-6
        enddo
     endif
 
@@ -113,7 +113,7 @@ contains
           vx = -TWO * (u(i,j,2) - v_bcx_hi) / dx(1)
           uy = (u(i,j+1,1) - u(i,j-1,1)) / (TWO * dx(2))
           vy = (u(i,j+1,2) - u(i,j-1,2)) / (TWO * dx(2))
-          strain_rate(i,j) = sqrt((ux**2 + vy**2) + HALF * (uy + vx)**2) + 1e-3
+          strain_rate(i,j) = sqrt(ux**2 + vy**2 + HALF * (uy + vx)**2) + 1e-6
        enddo
     endif
 
@@ -124,7 +124,7 @@ contains
           vx = (u(i+1,j,2) - u(i-1,j,2)) / (TWO * dx(1))
           uy = TWO * (u(i,j,1) - u_bcy_lo) / dx(2)
           vy = TWO * (u(i,j,2) - v_bcy_lo) / dx(2)
-          strain_rate(i,j) = sqrt((ux**2 + vy**2) + HALF * (uy + vx)**2) + 1e-3
+          strain_rate(i,j) = sqrt(ux**2 + vy**2 + HALF * (uy + vx)**2) + 1e-6
        enddo
     endif
 
@@ -135,7 +135,7 @@ contains
           vx = (u(i+1,j,2) - u(i-1,j,2)) / (TWO * dx(1))
           uy = -TWO * (u(i,j,1) - u_bcy_hi) / dx(2)
           vy = -TWO * (u(i,j,2) - v_bcy_hi) / dx(2)
-          strain_rate(i,j) = sqrt((ux**2 + vy**2) + HALF * (uy + vx)**2) + 1e-3
+          strain_rate(i,j) = sqrt(ux**2 + vy**2 + HALF * (uy + vx)**2) + 1e-6
        enddo
     endif
 

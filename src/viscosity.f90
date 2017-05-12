@@ -81,8 +81,14 @@ contains
     do j = lo(2), hi(2)
        do i = lo(1), hi(1)
           frac = strain_rate(i,j) / papa_reg
-          viscosity(i,j) = visc_coef + HALF * yield_stress / papa_reg * &
-             (ONE - exp(-frac)) / frac
+          if (frac < 1e-9) then 
+             ! Taylor expand exp() to avoid dividing by small number
+             viscosity(i,j) = visc_coef + HALF * yield_stress / papa_reg *& 
+                (ONE - HALF * frac + SIXTH * frac**2 - SIXTH * FOURTH * frac**3)
+          else
+             viscosity(i,j) = visc_coef + HALF * yield_stress / papa_reg * &
+                (ONE - exp(-frac)) / frac
+          endif
        enddo
     enddo
 

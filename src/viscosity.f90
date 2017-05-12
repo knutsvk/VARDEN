@@ -83,10 +83,10 @@ contains
           frac = strain_rate(i,j) / papa_reg
           if (frac < 1e-9) then
              ! Taylor expand exp() to avoid dividing by small number
-             viscosity(i,j) = visc_coef + yield_stress / papa_reg * &
+             viscosity(i,j) = visc_coef + HALF * yield_stress / papa_reg * &
                 (ONE - HALF * frac + SIXTH * frac**2 - SIXTH * FOURTH * frac**3)
           else 
-             viscosity(i,j) = visc_coef + yield_stress / papa_reg * &
+             viscosity(i,j) = visc_coef + HALF * yield_stress / papa_reg * &
                 (ONE - exp(-frac)) / frac
           endif
        enddo

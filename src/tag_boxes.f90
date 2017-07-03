@@ -92,6 +92,38 @@ contains
              end do
           end do
        end select
+    else if (prob_type .eq. 8) then
+       ! two-phase flow test case where density = 2 to the left of interface and density = 1 to its right. 
+       ! cells near the interface are tagged for refinement
+       select case(lev)
+       case (1)
+          ! level 1: tag all boxes where density is 1% different from 1 or 2
+          do j = lo(2),hi(2)
+             do i = lo(1),hi(1)
+                if (abs(mf(i,j)-1.5_dp_t) .lt. 0.49_dp_t) then
+                   tagbox(i,j) = .true.
+                end if
+             end do
+          enddo
+       case (2)
+          ! level 2: tag all boxes where density is 5% different from 1 or 2
+          do j = lo(2),hi(2)
+             do i = lo(1),hi(1)
+                if (abs(mf(i,j)-1.5_dp_t) .lt. 0.45_dp_t) then
+                   tagbox(i,j) = .true.
+                end if
+             end do
+          end do
+       case default
+          ! level 3++: tag all boxes where density is 10% different from 1 or 2
+          do j = lo(2),hi(2)
+             do i = lo(1),hi(1)
+                if (abs(mf(i,j)-1.5_dp_t) .lt. 0.4_dp_t) then
+                   tagbox(i,j) = .true.
+                end if
+             end do
+          end do
+       end select
     else if (prob_type .eq. 3) then
        select case(lev)
        case (1)

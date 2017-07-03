@@ -109,7 +109,8 @@ contains
     enddo
 
     if (prob_type .eq. 1 .or. prob_type .eq. 2 .or. prob_type .eq. 4 & 
-        .or. prob_type .eq. 5 .or. prob_type .eq. 6 .or. prob_type .eq. 7) then
+        .or. prob_type .eq. 5 .or. prob_type .eq. 6 .or. prob_type .eq. 7 & 
+        .or. prob_type .eq. 8) then
        call ml_restrict_and_fill(nlevs, u, mla%mba%rr, bc, bcomp=1, &
                                  dx_in=dx(1,:), prob_lo_in=prob_lo, prob_hi_in=prob_hi)
        call ml_restrict_and_fill(nlevs, s, mla%mba%rr, bc, bcomp=dm+1, &
@@ -144,6 +145,8 @@ contains
     real (kind = dp_t)  :: x,y,dist
     real (kind = dp_t)  :: xblob = 0.5d0, yblob = 0.5d0, densfact = 2.0d0
     real (kind = dp_t)  :: blobrad = 0.1d0
+    real (kind = dp_t)  :: xinterf = 0.50
+    real (kind = dp_t)  :: winterf = 0.05
    
 
     if (prob_type .eq. 1) then
@@ -212,6 +215,22 @@ contains
                 u(i,j,2) = -TENTH
              else 
                 u(i,j,2) = TENTH
+             end if
+          end do
+       end do
+    else if (prob_type .eq. 8) then
+       ! Poiseuille flow with sharp density interface (two-phase)
+       u = ZERO
+       s(:,:,1) = ONE
+       s(:,:,2) = ZERO
+       do j=lo(2),hi(2)
+          do i=lo(1),hi(1)
+             x = prob_lo(1) + dx(1)*(i + HALF)
+             if (x > xinterf-winterf) then
+                s(i,j,1) = ONE + HALF + 2 * winterf * (xinterf - x)
+             end if 
+             if (x > xinterf+winterf) then
+                s(i,j,1) = TWO
              end if
           end do
        end do

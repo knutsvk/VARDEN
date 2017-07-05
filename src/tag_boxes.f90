@@ -33,12 +33,12 @@ contains
     do i = 1, nfabs(mf)
        mfp => dataptr(mf, i)
        tp  => dataptr(tagboxes, i)
-       !up  => dataptr(aux_tag_mf, i)
+       up  => dataptr(aux_tag_mf, i)
        lo =  lwb(get_box(tagboxes, i))
        hi =  upb(get_box(tagboxes, i))
        select case (get_dim(mf))
        case (2)
-          call tag_boxes_2d(tp(:,:,1,1),mfp(:,:,1,:),up(:,:,1,:),lo,hi,ng,dx,lev)
+          call tag_boxes_2d(tp(:,:,1,1),mfp(:,:,1,1),up(:,:,1,:),lo,hi,ng,dx,lev)
        case  (3)
           call tag_boxes_3d(tp(:,:,:,1),mfp(:,:,:,1),lo,hi,ng,dx,lev)
        end select
@@ -50,7 +50,7 @@ contains
 
     integer          , intent(in   ) :: lo(:),hi(:),ng
     logical          , intent(  out) :: tagbox(lo(1)   :,lo(2)   :)
-    real(kind = dp_t), intent(in   ) ::     mf(lo(1)-ng:,lo(2)-ng:,:)
+    real(kind = dp_t), intent(in   ) ::     mf(lo(1)-ng:,lo(2)-ng:)
     real(kind = dp_t), intent(in   ) ::      u(lo(1)-ng:,lo(2)-ng:,:)
     real(dp_t)       , intent(in   ) :: dx
     integer          , intent(in   ) :: lev
@@ -67,7 +67,7 @@ contains
           ! tag all boxes where the first component of mf >= 1.01
           do j = lo(2),hi(2)
              do i = lo(1),hi(1)
-                if (mf(i,j,1) .gt. 1.01_dp_t) then
+                if (mf(i,j) .gt. 1.01_dp_t) then
                    tagbox(i,j) = .true.
                 end if
              end do
@@ -76,7 +76,7 @@ contains
           ! for level 2 tag all boxes where the first component of mf >= 1.1
           do j = lo(2),hi(2)
              do i = lo(1),hi(1)
-                if (mf(i,j,1) .gt. 1.1_dp_t) then
+                if (mf(i,j) .gt. 1.1_dp_t) then
                    tagbox(i,j) = .true.
                 end if
              end do
@@ -85,7 +85,7 @@ contains
           ! for level 3 or greater tag all boxes where the first component of mf >= 1.5
           do j = lo(2),hi(2)
              do i = lo(1),hi(1)
-                if (mf(i,j,1) .gt. 1.5_dp_t) then
+                if (mf(i,j) .gt. 1.5_dp_t) then
                    tagbox(i,j) = .true.
                 end if
              end do
@@ -103,7 +103,7 @@ contains
                    tagbox(i,j) = .true.
                 end if
              end do
-          enddo
+          end do
        case (2)
           ! level 2: tag all boxes where density is 5% different from 1 or 2
           do j = lo(2),hi(2)

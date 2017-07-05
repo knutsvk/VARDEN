@@ -105,11 +105,11 @@ contains
           call multifab_physbc(s(n), 1, dm+1, nscal, bc(n), &
                                dx_in=dx(n,:), prob_lo_in=prob_lo, prob_hi_in=prob_hi)
        end if
-       
+
     enddo
 
-    if (prob_type .eq. 1 .or. prob_type .eq. 2 .or. prob_type .eq. 4 & 
-        .or. prob_type .eq. 5 .or. prob_type .eq. 6 .or. prob_type .eq. 7 & 
+    if (prob_type .eq. 1 .or. prob_type .eq. 2 .or. prob_type .eq. 4 &
+        .or. prob_type .eq. 5 .or. prob_type .eq. 6 .or. prob_type .eq. 7 &
         .or. prob_type .eq. 8 .or. prob_type .eq. 9) then
        call ml_restrict_and_fill(nlevs, u, mla%mba%rr, bc, bcomp=1, &
                                  dx_in=dx(1,:), prob_lo_in=prob_lo, prob_hi_in=prob_hi)
@@ -125,9 +125,6 @@ contains
           call multifab_fill_ghost_cells(s(n),s(n-1),ng,mla%mba%rr(n-1,:), &
                                       bc(n-1),bc(n),1,dm+1,nscal)
        enddo
-    else if (prob_type .eq. 4 .or. prob_type .eq. 5 .or. prob_type .eq. 6) then
-       call ml_restrict_and_fill(nlevs, u, mla%mba%rr, bc, bcomp=1)
-       call ml_restrict_and_fill(nlevs, s, mla%mba%rr, bc, bcomp=dm+1)
     else
        call bl_error('Unsupported prob_type')
     end if
@@ -139,8 +136,8 @@ contains
   subroutine initdata_2d(u,s,lo,hi,ng,dx)
 
     integer, intent(in) :: lo(:), hi(:), ng
-    real (kind = dp_t), intent(out) :: u(lo(1)-ng:,lo(2)-ng:,:)  
-    real (kind = dp_t), intent(out) :: s(lo(1)-ng:,lo(2)-ng:,:)  
+    real (kind = dp_t), intent(out) :: u(lo(1)-ng:,lo(2)-ng:,:)
+    real (kind = dp_t), intent(out) :: s(lo(1)-ng:,lo(2)-ng:,:)
     real (kind = dp_t), intent(in ) :: dx(:)
 
     !     Local variables
@@ -151,10 +148,10 @@ contains
     real (kind = dp_t)  :: xinterf = 0.50
     real (kind = dp_t)  :: winterf = 0.05
     real (kind = dp_t)  :: rhotil = 30.0d0, delta = 0.05d0
-   
+
 
     if (prob_type .eq. 1) then
-       u = ZERO
+       u = 0.d0
 
        s(:,:,1) = ONE
        s(:,:,2) = ZERO
@@ -165,7 +162,7 @@ contains
           do i=lo(1),hi(1)
              x = dx(1)*(i + HALF)
              dist = SQRT((x-xblob)**2 + (y-yblob)**2)
-             s(i,j,1) = ONE + HALF*(densfact-ONE)*(ONE-TANH(30.*(dist-blobrad))) 
+             s(i,j,1) = ONE + HALF*(densfact-ONE)*(ONE-TANH(30.*(dist-blobrad)))
              s(i,j,2) = s(i,j,1)
           enddo
        enddo
@@ -182,7 +179,7 @@ contains
           do i=lo(1),hi(1)
              x = dx(1)*(i + HALF)
              dist = SQRT((x-xblob)**2 + (y-yblob)**2)
-             s(i,j,1) = ONE + HALF*(densfact-ONE)*(ONE-TANH(30.*(dist-blobrad))) 
+             s(i,j,1) = ONE + HALF*(densfact-ONE)*(ONE-TANH(30.*(dist-blobrad)))
              s(i,j,2) = s(i,j,1)
           enddo
        enddo
@@ -197,7 +194,7 @@ contains
           end do
        end do
     else if (prob_type .eq. 4 .or. prob_type .eq. 6) then
-       ! Start from rest 
+       ! Start from rest
        u = ZERO
        s(:,:,1) = ONE
        s(:,:,2) = ZERO
@@ -217,7 +214,7 @@ contains
              x = prob_lo(1) + dx(1)*(i + HALF)
              if (x < 0.5) then
                 u(i,j,2) = -TENTH
-             else 
+             else
                 u(i,j,2) = TENTH
              end if
           end do
@@ -232,13 +229,13 @@ contains
              x = prob_lo(1) + dx(1)*(i + HALF)
              if (x > xinterf-winterf) then
                 s(i,j,1) = ONE + HALF + 2 * winterf * (xinterf - x)
-             end if 
+             end if
              if (x > xinterf+winterf) then
                 s(i,j,1) = TWO
              end if
-          end do 
+          end do
        end do
-    else if (prob_type .eq. 9) then 
+    else if (prob_type .eq. 9) then
        ! Double shear layer
        s(:,:,1) = ONE
        s(:,:,2) = ZERO
@@ -248,7 +245,7 @@ contains
              x = prob_lo(1) + dx(1)*(i + HALF)
              if (y <= HALF) then
                 u(i,j,1) = tanh(rhotil * (y - FOURTH))
-             else 
+             else
                 u(i,j,1) = tanh(rhotil * (THREE4TH - y))
              end if
              u(i,j,2) = delta * sin(TWO * M_PI * x)
@@ -262,7 +259,7 @@ contains
 
   real(kind = dp_t) function h(x)
     real (kind = dp_t), intent(in) :: x
-    
+
     h =  0.02d0 * sin(4.0d0*M_PI*x*(prob_hi(1)-prob_lo(1))) + 0.01d0 * sin(8.0d0*M_PI*x*(prob_hi(1)-prob_lo(1)))
 
   end function h
@@ -270,8 +267,8 @@ contains
   subroutine initdata_3d(u,s,lo,hi,ng,dx)
 
     integer, intent(in) :: lo(:), hi(:), ng
-    real (kind = dp_t), intent(out) :: u(lo(1)-ng:,lo(2)-ng:,lo(3)-ng:,:)  
-    real (kind = dp_t), intent(out) :: s(lo(1)-ng:,lo(2)-ng:,lo(3)-ng:,:)  
+    real (kind = dp_t), intent(out) :: u(lo(1)-ng:,lo(2)-ng:,lo(3)-ng:,:)
+    real (kind = dp_t), intent(out) :: s(lo(1)-ng:,lo(2)-ng:,lo(3)-ng:,:)
     real (kind = dp_t), intent(in ) :: dx(:)
 
     !     Local variables
@@ -294,7 +291,7 @@ contains
              do i=lo(1),hi(1)
                 x = dx(1)*((i) + HALF)
                 dist = SQRT((x-xblob)**2 + (y-yblob)**2 + (z-zblob)**2)
-                s(i,j,k,1) = ONE + HALF*(densfact-ONE)*(ONE-TANH(30.*(dist-blobrad))) 
+                s(i,j,k,1) = ONE + HALF*(densfact-ONE)*(ONE-TANH(30.*(dist-blobrad)))
                 s(i,j,k,2) = s(i,j,k,1)
              enddo
           enddo
@@ -316,7 +313,7 @@ contains
              do i=lo(1),hi(1)
                 x = dx(1)*((i) + HALF)
                 dist = SQRT((x-xblob)**2 + (y-yblob)**2 + (z-zblob)**2)
-                s(i,j,k,1) = ONE + HALF*(densfact-ONE)*(ONE-TANH(30.*(dist-blobrad))) 
+                s(i,j,k,1) = ONE + HALF*(densfact-ONE)*(ONE-TANH(30.*(dist-blobrad)))
                 s(i,j,k,2) = s(i,j,k,1)
              enddo
           enddo
@@ -324,7 +321,7 @@ contains
     else if (prob_type .eq. 3) then
        u = ZERO
        s(:,:,:,2) = ZERO
-       
+
        do k=lo(3),hi(3)
           z = prob_lo(3) + dx(3)*(k + HALF)
           do j=lo(2),hi(2)
@@ -335,7 +332,7 @@ contains
              end do
           end do
        end do
-       
+
     else
        call bl_error('Unsupported prob_type')
     end if

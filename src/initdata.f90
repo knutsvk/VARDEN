@@ -110,7 +110,7 @@ contains
 
     if (prob_type .eq. 1 .or. prob_type .eq. 2 .or. prob_type .eq. 4 & 
         .or. prob_type .eq. 5 .or. prob_type .eq. 6 .or. prob_type .eq. 7 & 
-        .or. prob_type .eq. 8) then
+        .or. prob_type .eq. 8 .or. prob_type .eq. 9) then
        call ml_restrict_and_fill(nlevs, u, mla%mba%rr, bc, bcomp=1, &
                                  dx_in=dx(1,:), prob_lo_in=prob_lo, prob_hi_in=prob_hi)
        call ml_restrict_and_fill(nlevs, s, mla%mba%rr, bc, bcomp=dm+1, &
@@ -236,6 +236,8 @@ contains
              if (x > xinterf+winterf) then
                 s(i,j,1) = TWO
              end if
+          end do 
+       end do
     else if (prob_type .eq. 9) then 
        ! Double shear layer
        s(:,:,1) = ONE

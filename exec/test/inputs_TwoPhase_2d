@@ -3,11 +3,11 @@
 
  prob_type = 8
 
- max_levs = 5
+ max_levs = 4
  regrid_int = 2
  amr_buf_width=4
 
- n_cellx = 20
+ n_cellx = 100
  n_celly = 10
  max_grid_size = 40
 
@@ -15,7 +15,7 @@
  cluster_min_width = 4
  cluster_blocking_factor = 4
  
- prob_hi_x = 2.0
+ prob_hi_x = 10.0
  prob_hi_y = 1.0
 
  init_iter = 3
@@ -34,7 +34,7 @@
 
  diffusion_type = 2
 
- yield_stress = 0.0
+ yield_stress = 0.1
  papa_reg = 0.001
 
  grav = 0.0d0
@@ -43,7 +43,7 @@
  bcx_lo = 12
  bcx_hi = 12
  bcy_lo = 15
- bcy_hi = 12
+ bcy_hi = 15
 
  verbose = 0
  mg_verbose = 0

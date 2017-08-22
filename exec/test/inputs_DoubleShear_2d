@@ -8,9 +8,9 @@
  regrid_int = 1
  amr_buf_width = 1
 
- n_cellx = 256
- n_celly = 256
- max_grid_size = 64
+ n_cellx = 128
+ n_celly = 128
+ max_grid_size = 32
  
  init_iter = 3
  do_initial_projection = 0

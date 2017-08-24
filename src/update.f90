@@ -161,13 +161,13 @@ contains
 
     else
 
+       ! TODO: update density according to level set function
+
        do comp = 1,size(sold,dim=3)
           if (is_cons(comp)) then
              do j = lo(2), hi(2)
                 do i = lo(1), hi(1)
-                   divsu = (fluxx(i+1,j,comp)-fluxx(i,j,comp))/dx(1) &
-                         + (fluxy(i,j+1,comp)-fluxy(i,j,comp))/dx(2)
-                   snew(i,j,comp) = sold(i,j,comp) - dt * divsu + dt * force(i,j,comp)
+                   snew(i,j,comp) = sold(i,j,comp)
                 enddo
              enddo
           else

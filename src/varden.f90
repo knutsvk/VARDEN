@@ -554,10 +554,6 @@ contains
     plot_file_name = trim(plot_base_name) // plot_index
 
     if (coarsen_plot_data) then
-       call multifab_copy_c(plotdata(n), strainrate_comp, strain_rate(n), 1, 1)
-
-       viscosity_comp = strainrate_comp + 1
-
        ! We have only implemented this for nlevs = 1 right now
        ref_ratio(1:dm) = coarsening_factor
        rr_for_write(:) = coarsening_factor

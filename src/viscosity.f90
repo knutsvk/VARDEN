@@ -27,7 +27,7 @@ contains
 
     ! local
     real(kind=dp_t), pointer :: vp(:,:,:,:)
-    real(kind=dp_t), pointer :: sp(:,:,:,:)
+    real(kind=dp_t), pointer :: pp(:,:,:,:)
 
     integer :: lo(mla%dim), hi(mla%dim)
     integer :: i, dm, n, nlevs, ng
@@ -81,7 +81,7 @@ contains
     do j = lo(2), hi(2)
        do i = lo(1), hi(1)
        ! TODO: make level-set dependent
-          viscosity(i,j) = viscosity(i,j)
+          viscosity(i,j) = visc_coef
        enddo
     enddo
 
@@ -94,8 +94,8 @@ contains
     use probin_module, only: visc_coef
 
     integer           , intent(in   ) :: lo(:), hi(:), ng
-    real (kind = dp_t), intent(inout) ::    visc(lo(1)-ng:,lo(2)-ng:,lo(3)-ng:,:)  
-    real (kind = dp_t), intent(in   ) ::     phi(lo(1)   :,lo(2)   :,lo(3)   :,:)  
+    real (kind = dp_t), intent(inout) ::    visc(lo(1)-ng:,lo(2)-ng:,lo(3)-ng:)  
+    real (kind = dp_t), intent(in   ) ::     phi(lo(1)   :,lo(2)   :,lo(3)   :)  
     real (kind = dp_t), intent(in   ) :: dx(:)
 
     integer :: i, j, k
@@ -104,7 +104,7 @@ contains
        do j = lo(2), hi(2)
           do i = lo(1), hi(1)
         ! TODO: make level-set dependent
-            viscosity(i,j) = viscosity(i,j)
+            visc(i,j,k) = visc_coef
           enddo
        enddo
     enddo

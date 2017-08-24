@@ -23,7 +23,7 @@ contains
     use nodal_divu_module         , only : divu, subtract_divu_from_rh
     use mg_module           
     use probin_module             , only : mg_verbose, cg_verbose, hg_bottom_solver, &
-                                           max_mg_bottom_nlevels, yield_stress, papa_reg
+                                           max_mg_bottom_nlevels
     use stencil_types_module
 
     type(ml_layout), intent(in   ) :: mla
@@ -65,7 +65,6 @@ contains
     end if
 
     max_iter = 100
-    if ( yield_stress .gt. 0.0d0 ) max_iter = max(max_iter, int(0.1d0 / papa_reg))
 
     do n = 1,nlevs
        call multifab_build(coeffs(n), mla%la(n), 1, 1)

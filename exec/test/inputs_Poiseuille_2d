@@ -28,9 +28,6 @@
 
  diffusion_type = 2
 
- yield_stress = 0.3
- papa_reg = 0.001
-
  grav = 0.0d0
  dpdx = 1.0d0
 

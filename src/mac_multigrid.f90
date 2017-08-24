@@ -21,7 +21,7 @@ contains
 
     use ml_solve_module       , only : ml_cc_solve
     use probin_module         , only : mg_verbose, cg_verbose, mg_bottom_solver, &
-                                       max_mg_bottom_nlevels, yield_stress, papa_reg
+                                       max_mg_bottom_nlevels
 
     type(ml_layout), intent(in   ) :: mla
     type(multifab) , intent(inout) :: rh(:),phi(:)
@@ -53,7 +53,6 @@ contains
     end if
 
     max_iter = 100
-    if ( yield_stress .gt. 0.0d0 ) max_iter = max(max_iter, int(0.1d0 / papa_reg))
 
     call ml_cc_solve(mla,rh,phi,fine_flx,alpha,beta,dx,the_bc_tower,bc_comp, &
                      eps = rel_solver_eps, &

@@ -23,15 +23,13 @@ subroutine varden()
   use advance_module
   use regrid_module
   use explicit_diffusive_module, only : get_explicit_diffusive_term
-  use strainrate_module
   use viscosity_module
-  use stress_module
 
   use probin_module, only : dim_in, max_levs, nlevs, ng_cell, ng_grow, pmask, init_iter, max_step, &
                             stop_time, restart, chk_int, plot_int, regrid_int, init_shrink, & 
                             fixed_dt, nodal, ref_ratio, fixed_grids, grids_file_name, & 
                             do_initial_projection, grav, probin_init, probin_close, dpdx, &
-                            visc_coef, yield_stress, prob_lo, prob_hi
+                            visc_coef, prob_lo, prob_hi
 
   implicit none
 
@@ -57,10 +55,7 @@ subroutine varden()
   type(multifab), allocatable ::   ext_vel_force(:)
   type(multifab), allocatable ::  ext_scal_force(:)
   type(multifab), allocatable ::            lapu(:)
-  type(multifab), allocatable ::     strain_rate(:)
   type(multifab), allocatable ::       viscosity(:)
-  type(multifab), allocatable ::      stress_old(:)
-  type(multifab), allocatable ::      stress_new(:)
   type(multifab), allocatable ::        plotdata(:)
 
   character(len=5)               :: plot_index, check_index
@@ -82,7 +77,7 @@ subroutine varden()
   ! Set up plot_names for writing plot files.
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  allocate(plot_names(2*dm+nscal+5))
+  allocate(plot_names(2*dm+nscal+3))
 
   plot_names(1) = "x_vel"
   plot_names(2) = "y_vel"
@@ -91,12 +86,10 @@ subroutine varden()
   if (nscal > 1) plot_names(dm+2) = "tracer"
   plot_names(dm+nscal+1) = "magvel"
   plot_names(dm+nscal+2) = "vort"
-  plot_names(dm+nscal+3) = "strainrate"
-  plot_names(dm+nscal+4) = "viscosity"
-  plot_names(dm+nscal+5) = "stress"
-  plot_names(dm+nscal+6) = "gpx"
-  plot_names(dm+nscal+7) = "gpy"
-  if (dm > 2) plot_names(dm+nscal+8) = "gpz"
+  plot_names(dm+nscal+3) = "viscosity"
+  plot_names(dm+nscal+4) = "gpx"
+  plot_names(dm+nscal+5) = "gpy"
+  if (dm > 2) plot_names(dm+nscal+6) = "gpz"
 
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -125,8 +118,7 @@ subroutine varden()
   allocate(unew(nlevs), snew(nlevs))
   allocate(ext_vel_force(nlevs), ext_scal_force(nlevs))
   allocate(lapu(nlevs))
-  allocate(strain_rate(nlevs), viscosity(nlevs))
-  allocate(stress_old(nlevs), stress_new(nlevs))
+  allocate(viscosity(nlevs))
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   ! Initial projection if not restart
@@ -174,7 +166,7 @@ subroutine varden()
 
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  ! Create "new" unew, snew, ext_vel_force, ext_scal_force, lapu, strain_rate, viscosity
+  ! Create "new" unew, snew, ext_vel_force, ext_scal_force, lapu, viscosity
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   call make_temps(mla)
@@ -200,24 +192,13 @@ subroutine varden()
   end do
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  ! Update lapu, strain rate and viscosity
+  ! Update lapu and viscosity
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
  ! compute lapu
   do comp = 1, dm
     call get_explicit_diffusive_term(mla, lapu, uold, comp, comp, dx, the_bc_tower)
   end do
-
-  if ( yield_stress > 0.0d0 ) then
-     ! compute rate-of-strain magnitude
-     call update_strainrate(mla, strain_rate, uold, dx, the_bc_tower%bc_tower_array)
-
-     ! compute viscosity
-     call update_viscosity(mla, viscosity, strain_rate, dx, the_bc_tower%bc_tower_array)
-
-     ! compute stress magnitude
-     call update_stress(mla, stress_new, viscosity, strain_rate, dx, the_bc_tower%bc_tower_array)
-  endif
 
   if (restart < 0) then
 
@@ -290,7 +271,7 @@ subroutine varden()
            if (grids_file_name /= '') &
               call write_grids(grids_file_name, mla, istep)
 
-           ! Create "new" unew, snew, ext_vel_force, ext_scal_force, lapu, strain_rate, viscosity
+           ! Create "new" unew, snew, ext_vel_force, ext_scal_force, lapu, viscosity
            call make_temps(mla)
 
         end if  
@@ -330,17 +311,6 @@ subroutine varden()
           call get_explicit_diffusive_term(mla, lapu, uold, comp, comp, dx, the_bc_tower)
         end do
 
-        if ( yield_stress > 0.0d0 ) then
-           ! compute rate-of-strain magnitude
-           call update_strainrate(mla, strain_rate, uold, dx, the_bc_tower%bc_tower_array)
-
-           ! compute viscosity
-           call update_viscosity(mla, viscosity, strain_rate, dx, the_bc_tower%bc_tower_array)
-
-           ! compute stress magnitude
-           call update_stress(mla, stress_new, viscosity, strain_rate, dx, &
-                              the_bc_tower%bc_tower_array)
-        endif
 
         if (istep > 1) then
            dtold = dt
@@ -389,17 +359,12 @@ subroutine varden()
          if ( stop_time >= 0.d0 ) then
             if ( time >= stop_time ) goto 999
          else if ( istep > init_step+1 ) then
-            if ( yield_stress > 0.d0 ) then
-               if ( steady_state(mla, stress_old, stress_new) ) goto 999
-            else
-               if ( steady_state(mla, uold, unew) ) goto 999
-            end if
+            if ( steady_state(mla, uold, unew) ) goto 999
          end if
 
          do n = 1, nlevs
             call multifab_copy_c(uold(n),1,unew(n),1,dm)
             call multifab_copy_c(sold(n),1,snew(n),1,nscal)
-            call multifab_copy(stress_old(n), stress_new(n))
          end do
 
      end do ! istep loop
@@ -457,10 +422,7 @@ contains
        call multifab_build( ext_vel_force(n), mla_loc%la(n),    dm, 1)
        call multifab_build(ext_scal_force(n), mla_loc%la(n), nscal, 1)
        call multifab_build(          lapu(n), mla_loc%la(n),    dm, 0)
-       call multifab_build(   strain_rate(n), mla_loc%la(n),     1, 0)
        call multifab_build(     viscosity(n), mla_loc%la(n),     1, 1)
-       call multifab_build(    stress_old(n), mla_loc%la(n),     1, 0)
-       call multifab_build(    stress_new(n), mla_loc%la(n),     1, 0)
 
        call setval(          unew(n),      ZERO,           all=.true.)
        call setval(          snew(n),      ZERO,           all=.true.)
@@ -468,10 +430,7 @@ contains
        call setval( ext_vel_force(n),      grav, dm,    1, all=.true.)
        call setval(ext_scal_force(n),      ZERO,           all=.true.)
        call setval(          lapu(n),      ZERO,           all=.true.)
-       call setval(   strain_rate(n),      ZERO,           all=.true.)
        call setval(      viscosity(n), visc_coef,           all=.true.)
-       call setval(    stress_old(n),      ZERO,           all=.true.)
-       call setval(    stress_new(n),      ZERO,           all=.true.)
     end do
 
   end subroutine make_temps
@@ -484,10 +443,7 @@ contains
        call multifab_destroy( ext_vel_force(n))
        call multifab_destroy(ext_scal_force(n))
        call multifab_destroy(          lapu(n))
-       call multifab_destroy(   strain_rate(n))
        call multifab_destroy(     viscosity(n))
-       call multifab_destroy(    stress_old(n))
-       call multifab_destroy(    stress_new(n))
     end do
 
   end subroutine delete_temps
@@ -549,7 +505,7 @@ contains
 
     integer                 :: n, n_plot_comps
     integer                 :: mvel_comp, vort_comp, gpx_comp
-    integer                 :: strainrate_comp, viscosity_comp, stress_comp
+    integer                 :: viscosity_comp
     logical                 :: coarsen_plot_data
  
     ! These are only used if you want to coarsen your plotdata before writing
@@ -573,7 +529,7 @@ contains
 
     allocate(plotdata(nlevs))
 
-    n_plot_comps = 2 * dm + nscal + 5
+    n_plot_comps = 2 * dm + nscal + 3
 
     do n = 1, nlevs
        call multifab_build(plotdata(n), mla%la(n), n_plot_comps, 0)
@@ -587,16 +543,10 @@ contains
        call make_vorticity(plotdata(n), vort_comp, uold(n), dx(n,:), &
                            the_bc_tower%bc_tower_array(n))
 
-       strainrate_comp = vort_comp + 1
-       call multifab_copy_c(plotdata(n), strainrate_comp, strain_rate(n), 1, 1)
-
-       viscosity_comp = strainrate_comp + 1
+       viscosity_comp = vort_comp + 1
        call multifab_copy_c(plotdata(n), viscosity_comp, viscosity(n), 1, 1)
 
-       stress_comp = viscosity_comp + 1
-       call multifab_copy_c(plotdata(n), stress_comp, stress_old(n), 1, 1)
-
-       gpx_comp = stress_comp + 1
+       gpx_comp = viscosity_comp + 1
        call multifab_copy_c(plotdata(n), gpx_comp, gp(n), 1, dm)
     end do
 
@@ -604,6 +554,9 @@ contains
     plot_file_name = trim(plot_base_name) // plot_index
 
     if (coarsen_plot_data) then
+       call multifab_copy_c(plotdata(n), strainrate_comp, strain_rate(n), 1, 1)
+
+       viscosity_comp = strainrate_comp + 1
 
        ! We have only implemented this for nlevs = 1 right now
        ref_ratio(1:dm) = coarsening_factor
